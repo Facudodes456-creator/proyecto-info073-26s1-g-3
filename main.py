@@ -264,8 +264,14 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
 
     if pos_elem == MANZANA:
         manzanas_comidas += 1
+
+        tablero[ind_actual_fila][ind_actual_col] = SUELO
+        tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
+        
         if manzanas_comidas >= MANZANAS_OBJETIVO:
             return "victoria", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
+            
+        aparecer_aleatorio(tablero, MANZANA)
         return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
 
     # Movimiento normal, si es que no encontramos manzana ni obstáculo.
