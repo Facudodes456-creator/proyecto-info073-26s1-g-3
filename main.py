@@ -117,9 +117,9 @@ def refrescar_tablero(screen, tablero):
     # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
     
-    wall = pygame.image.load("data/pared.png").convert()
-    apple = pygame.image.load("data/manzana.png").convert_alpha()
-    floor = pygame.image.load("data/suelo.png").convert()
+    wall = pygame.image.load("data/imagenes/pared.png").convert()
+    apple = pygame.image.load("data/imagenes/manzana.png").convert_alpha()
+    floor = pygame.image.load("data/imagenes/suelo.png").convert()
 
     # Podemos calcular el tamaño en pixeles que tendrá cada
     # casilla al dividir tanto la altura de la pantalla (screen.get_height())
