@@ -4,10 +4,6 @@ import random
 
 import pygame
 
-jugador_img = pygame.image.load(subidos/persona.png)
-manzana_img = pygame.image.load(subidos/manzana.png)
-obstaculo_img = pygame.image.load(subidos/pared.png)
-floor_img = pygame.image.load(subidos/suelo.png)
 # Estados del juego
 ESTADO_INICIO = "inicio"
 ESTADO_INSTRUCCIONES = "instrucciones"
@@ -120,9 +116,10 @@ def refrescar_tablero(screen, tablero):
     # Rellena la pantalla con el color gris, básicamente pintando
     # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
-    wall = pygame.image.load(obstaculo_img)
-    apple = pygame.image.load(manzana_img)
-    floor = pygame.image.load(floor_img)
+    
+    wall = pygame.image.load(data/subidos/pared.png).convert()
+    apple = pygame.image.load(data/subidos/manzana.png).convert_alpha()
+    floor = pygame.image.load(data/subidos/suelo.png).convert()
 
     # Podemos calcular el tamaño en pixeles que tendrá cada
     # casilla al dividir tanto la altura de la pantalla (screen.get_height())
