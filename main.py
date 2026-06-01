@@ -29,7 +29,7 @@ SUELO = 0
 OBSTACULO = 1
 JUGADOR = 2
 MANZANA = 3
-manzanas_para_ganar = 5
+MANZANAS_OBJETIVO = 5
 
 
 # Tamaño del tablero
