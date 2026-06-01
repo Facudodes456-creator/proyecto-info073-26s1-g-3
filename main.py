@@ -4,10 +4,10 @@ import random
 
 import pygame
 
-jugador_img = pygame.image.load("data/jugador.png")
-manzana_img = pygame.image.load("data/manzana.png")
-obstaculo_img = pygame.image.load("data/obstaculo.png")
-
+jugador_img = pygame.image.load(subidos/persona.png)
+manzana_img = pygame.image.load(subidos/manzana.png)
+obstaculo_img = pygame.image.load(subidos/pared.png)
+floor_img = pygame.image.load(subidos/suelo.png)
 # Estados del juego
 ESTADO_INICIO = "inicio"
 ESTADO_INSTRUCCIONES = "instrucciones"
@@ -120,6 +120,9 @@ def refrescar_tablero(screen, tablero):
     # Rellena la pantalla con el color gris, básicamente pintando
     # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
+    wall = pygame.image.load(obstaculo_img)
+    apple = pygame.image.load(manzana_img)
+    floor = pygame.image.load(floor_img)
 
     # Podemos calcular el tamaño en pixeles que tendrá cada
     # casilla al dividir tanto la altura de la pantalla (screen.get_height())
@@ -141,11 +144,7 @@ def refrescar_tablero(screen, tablero):
             if tablero[i][j] == OBSTACULO:
                 # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
                 # de tamaño (ancho_elem, alto_elem) y color negro.
-                pygame.draw.rect(
-                    screen,
-                    "black",
-                    pygame.Rect((pos_x, pos_y), (ancho_elem, alto_elem)),
-                )
+                screen.blit(wall,[pos_x,pos_y])
             elif tablero[i][j] == JUGADOR:
                 # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
                 # con un radio definido por la variable "radio" (ancho_elem / 2).
@@ -156,17 +155,31 @@ def refrescar_tablero(screen, tablero):
                     radio,
                 )
             elif tablero[i][j] == MANZANA:
-                pygame.draw.rect(
-                    screen,
-                    "red",
-                    # Acá reducimos el tamaño del rectángulo
-                    # para identificarlo más fácilmente
-                    pygame.Rect(
-                        (pos_x + 10, pos_y + 10),
-                        (ancho_elem - 20, alto_elem - 20),
-                    ),
-                )
+                screen.blit(apple,[pos_x,pos_y])
+            elif tablero[i][j] == SUELO:
+                screen.blit(floor,[pos_x,pos_y])
 
+        # Posición en eje "x" en unidad de píxeles.
+        pos_x = 0
+        for j in range(COLUMNAS):
+            if tablero[i][j] == OBSTACULO:
+                # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
+                # de tamaño (ancho_elem, alto_elem) y color negro.
+                screen.blit(wall,[pos_x,pos_y])
+            elif tablero[i][j] == JUGADOR:
+                # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
+                # con un radio definido por la variable "radio" (ancho_elem / 2).
+                pygame.draw.circle(
+                    screen,
+                    "green",
+                    (pos_x + radio, pos_y + radio),
+                    radio,
+                )
+            elif tablero[i][j] == MANZANA:
+              screen.blit(floor,[pos_x,pos_y])
+              screen.blit(apple,[pos_x,pos_y])
+            else:
+                screen.blit(floor,[pos_x,pos_y])
             # Estamos recorriendo los píxeles de la pantalla, por lo que
             # debemos sumar el ancho y altura en pixeles de cada elemento que
             # ya hayamos recorrido para avanzar al siguiente.
