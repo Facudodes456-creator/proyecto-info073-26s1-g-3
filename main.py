@@ -25,7 +25,7 @@ PANTALLA_DERROTA = "pantalla_derrota.bmp"
 RETRASO = 200
 
 # Códigos de cada elemento del tablero
-VACIO = 0
+SUELO = 0
 OBSTACULO = 1
 JUGADOR = 2
 MANZANA = 3
@@ -63,7 +63,7 @@ def aparecer_aleatorio(tablero, id_elem):
             # Obtenemos el elemento que se encuentra en esa fila y columna.
             elem_pos = tablero[fila][columna]
 
-            if elem_pos == VACIO:
+            if elem_pos == SUELO:
                 # Al utilizar los paréntesis () dentro de la función, lo estaremos
                 # añadiendo como una tupla con la estructura (columna, fila).
                 vacios.append((columna, fila))
@@ -117,9 +117,9 @@ def refrescar_tablero(screen, tablero):
     # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
     
-    wall = pygame.image.load(data/subidos/pared.png).convert()
-    apple = pygame.image.load(data/subidos/manzana.png).convert_alpha()
-    floor = pygame.image.load(data/subidos/suelo.png).convert()
+    wall = pygame.image.load("data/pared.png").convert()
+    apple = pygame.image.load("data/manzana.png").convert_alpha()
+    floor = pygame.image.load("data/suelo.png").convert()
 
     # Podemos calcular el tamaño en pixeles que tendrá cada
     # casilla al dividir tanto la altura de la pantalla (screen.get_height())
@@ -269,7 +269,7 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
         return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
 
     # Movimiento normal, si es que no encontramos manzana ni obstáculo.
-    tablero[ind_actual_fila][ind_actual_col] = VACIO
+    tablero[ind_actual_fila][ind_actual_col] = SUELO
     tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
 
     return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
