@@ -1,0 +1,37 @@
+﻿Entregable N.° 2  
+grupo 3 : Julio C , Luciano S , Sebastián A y Matías A 
+
+
+
+
+En este avance lo que hemos hecho dentro del proyecto entregado fue añadir mecánicas e implementaciones gráficas:
+
+
+Implementado
+
+
+-Un número de manzanas necesarias para completar el nivel 
+-Implementación de imágenes 
+
+
+Algunas de las funcionalidades que nos faltó implementar fueron: 
+
+
+En Proceso
+
+
+- implementación inicial de efectos de sonido 
+-* Trabajando en las pantallas del juego aunque no se encuentran implementadas en el proyecto 
+
+
+Falta por implementar
+
+
+-Elementos que dañen al personaje 
+-Un sistema que aumente el tamaño del personaje
+
+
+Referencias : 
+
+
+Todo lo realizado fue en base a lo visto en las ayudantías en los archivos y ppt enviados  incluyendo ayuda del estudiante a cargo para facilitar nuestra comprensión y errores cuando modificamos el código.
