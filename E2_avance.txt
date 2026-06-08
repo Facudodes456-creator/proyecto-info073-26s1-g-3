@@ -25,15 +25,13 @@ En Proceso
 
 
 - implementación inicial de efectos de sonido 
--* Trabajando en las pantallas del juego aunque no se encuentran implementadas en el proyecto
-- Que el monstruo se mueva de forma randomizada y da;e al enemigo
-- Gestionar el overlap entre objects de distintos ids
-
+- las pantallas del juego aunque no se encuentran implementadas en el proyecto
+- Que el monstruo se mueva de forma randomizada y dañe al jugador
+- Gestionar el overlap entre objetos de distintos id´s
+- Elementos que dañen al personaje 
 
 Falta por implementar
 
-
--Elementos que dañen al personaje 
 -Un sistema que aumente el tamaño del personaje
 
 
