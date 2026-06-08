@@ -31,6 +31,7 @@ JUGADOR = 2
 MANZANA = 3
 MANZANAS_OBJETIVO = 5
 MAX_PASOS = 50
+VIDA = 3
 
 # Variable global para pasos restantes, y pasos realizados
 restantes = MAX_PASOS
@@ -255,6 +256,7 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
     # con información de la dirección y posición del jugador.
     global restantes
     global pasos
+    global VIDA
     dir_col, dir_fila = direccion
     ind_actual_col, ind_actual_fila = (
         pos_jugador  # Tupla (columna, fila) que representa los índices en el tablero.
@@ -271,8 +273,12 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
     # Obtenemos el elemento que se encuentre en el tablero en la nueva posición del jugador.
     pos_elem = tablero[ind_nueva_fila][ind_nueva_col]
 
-    if pos_elem == OBSTACULO or pos_elem == MONSTRUO:
+    if pos_elem == OBSTACULO:
         return "derrota", pos_jugador,manzanas_comidas
+    elif pos_elem == MONSTRUO:
+        VIDA -= 1
+        if VIDA <= 0:
+            return "derrota", pos_jugador,manzanas_comidas
 
     if pos_elem == MANZANA:
         manzanas_comidas += 1
@@ -388,6 +394,7 @@ def main():
 
     global restantes
     global pasos
+    global VIDA
 
     estado = ESTADO_INICIO
     tablero = []
@@ -453,11 +460,13 @@ def main():
                     estado = ESTADO_DERROTA
                     restantes = MAX_PASOS
                     pasos = 0
+                    VIDA = 3
                     mostrar_pantalla(screen, PANTALLA_DERROTA)
                 elif resultado == "victoria":
                     estado = ESTADO_VICTORIA
                     restantes = MAX_PASOS
                     pasos = 0
+                    VIDA = 3
                     mostrar_pantalla(screen, PANTALLA_VICTORIA)
                 else:
                     tiempo_ultimo_mov = tiempo_actual
@@ -468,6 +477,7 @@ def main():
                         estado = ESTADO_DERROTA
                         restantes = MAX_PASOS
                         pasos = 0
+                        VIDA = 3
                         mostrar_pantalla(screen, PANTALLA_DERROTA)
                     else:
                         refrescar_tablero(screen, tablero)
