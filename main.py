@@ -1,4 +1,3 @@
-# Importamos módulos requeridos
 import os
 import random
 
@@ -27,10 +26,16 @@ RETRASO = 200
 # Códigos de cada elemento del tablero
 SUELO = 0
 OBSTACULO = 1
+MONSTRUO = 4
 JUGADOR = 2
 MANZANA = 3
 MANZANAS_OBJETIVO = 5
+MAX_PASOS = 50
 
+# Variable global para pasos restantes, y pasos realizados
+restantes = MAX_PASOS
+pasos = 0
+print(restantes)
 
 # Tamaño del tablero
 # Si se cambian estas constantes, se debe modificar la definición
@@ -101,6 +106,7 @@ def poblar_tablero(tablero):
         - tablero: El tablero con sus posiciones actuales.
     """
     aparecer_aleatorio(tablero, OBSTACULO)
+    aparecer_aleatorio(tablero, MONSTRUO)
     aparecer_aleatorio(tablero, MANZANA)
 
 
@@ -120,6 +126,7 @@ def refrescar_tablero(screen, tablero):
     wall = pygame.image.load("data/imagenes/pared.png").convert()
     apple = pygame.image.load("data/imagenes/manzana.png").convert_alpha()
     floor = pygame.image.load("data/imagenes/suelo.png").convert()
+    monster = pygame.image.load("data/imagenes/monstruo.png").convert()
 
     # Podemos calcular el tamaño en pixeles que tendrá cada
     # casilla al dividir tanto la altura de la pantalla (screen.get_height())
@@ -175,6 +182,9 @@ def refrescar_tablero(screen, tablero):
             elif tablero[i][j] == MANZANA:
               screen.blit(floor,[pos_x,pos_y])
               screen.blit(apple,[pos_x,pos_y])
+            elif tablero[i][j] == MONSTRUO:
+                screen.blit(floor,[pos_x,pos_y])
+                screen.blit(monster, [pos_x, pos_y])
             else:
                 screen.blit(floor,[pos_x,pos_y])
             # Estamos recorriendo los píxeles de la pantalla, por lo que
@@ -243,6 +253,8 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
 
     # Obtenemos los componentes "x" e "y" de cada tupla recibida
     # con información de la dirección y posición del jugador.
+    global restantes
+    global pasos
     dir_col, dir_fila = direccion
     ind_actual_col, ind_actual_fila = (
         pos_jugador  # Tupla (columna, fila) que representa los índices en el tablero.
@@ -259,11 +271,14 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
     # Obtenemos el elemento que se encuentre en el tablero en la nueva posición del jugador.
     pos_elem = tablero[ind_nueva_fila][ind_nueva_col]
 
-    if pos_elem == OBSTACULO:
+    if pos_elem == OBSTACULO or pos_elem == MONSTRUO:
         return "derrota", pos_jugador,manzanas_comidas
 
     if pos_elem == MANZANA:
         manzanas_comidas += 1
+        # Agregamos 5 pasos a el jugador, procurando de no sobrepasar los 50 pasos maximos.
+        pasos -= 6
+        
 
         tablero[ind_actual_fila][ind_actual_col] = SUELO
         tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
@@ -371,6 +386,9 @@ def main():
 
     running = True
 
+    global restantes
+    global pasos
+
     estado = ESTADO_INICIO
     tablero = []
     pos_jugador = (0, 0)
@@ -433,13 +451,28 @@ def main():
 
                 if resultado == "derrota":
                     estado = ESTADO_DERROTA
+                    restantes = MAX_PASOS
+                    pasos = 0
                     mostrar_pantalla(screen, PANTALLA_DERROTA)
                 elif resultado == "victoria":
                     estado = ESTADO_VICTORIA
+                    restantes = MAX_PASOS
+                    pasos = 0
                     mostrar_pantalla(screen, PANTALLA_VICTORIA)
                 else:
                     tiempo_ultimo_mov = tiempo_actual
-                    refrescar_tablero(screen, tablero)
+                    pasos += 1
+                    restantes = MAX_PASOS - pasos
+                    pygame . display . set_caption ( f" Juego - Pasos restantes : { restantes}")
+                    if pasos >= MAX_PASOS:
+                        estado = ESTADO_DERROTA
+                        restantes = MAX_PASOS
+                        pasos = 0
+                        mostrar_pantalla(screen, PANTALLA_DERROTA)
+                    else:
+                        refrescar_tablero(screen, tablero)
+                
+                
 
     pygame.quit()
 
