@@ -25,13 +25,60 @@ RETRASO = 200
 
 # Códigos de cada elemento del tablero
 SUELO = 0
-OBSTACULO = 1
+OBSTACULO = 1   
 MONSTRUO = 4
 JUGADOR = 2
 MANZANA = 3
 MANZANAS_OBJETIVO = 5
+
+# Variables globales para manejar distintos tipos de datos
 MAX_PASOS = 50
 VIDA = 3
+
+# Diccionario que contiene informacion esencial de cada piso
+
+pisos_datos = {
+    1 : {
+        "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 1
+            "Monstruo" : "placeholder",
+            "Piso" : "placeholder",
+            "Manzana" : "placeholder",
+            "Jugador" : "placeholder"
+        },
+        "Datos" : { #Aqui esta la logica del piso correspondiente
+            "MONSTRUOS_MAX" : 2,
+            "OBSTACULOS_MAX" : 2,
+        },
+        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
+    },
+        2 : {
+        "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 2
+            "Monstruo" : "placeholder",
+            "Piso" : "placeholder",
+            "Manzana" : "placeholder",
+            "Jugador" : "placeholder"
+        },
+        "Datos" : { #Aqui esta la logica del piso correspondiente
+            "MONSTRUOS_MAX" : 4,
+            "OBSTACULOS_MAX" : 4,
+        },
+        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
+    },
+        3 : {
+        "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 3
+            "Monstruo" : "placeholder",
+            "Piso" : "placeholder",
+            "Manzana" : "placeholder",
+            "Jugador" : "placeholder"
+        },
+        "Datos" : { #Aqui esta la logica del piso correspondiente
+            "MONSTRUOS_MAX" : 10,
+            "OBSTACULOS_MAX" : 10,
+        },
+        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
+    },
+    
+}
 
 # Variable global para pasos restantes, y pasos realizados
 restantes = MAX_PASOS
@@ -107,6 +154,7 @@ def poblar_tablero(tablero):
         - tablero: El tablero con sus posiciones actuales.
     """
     aparecer_aleatorio(tablero, OBSTACULO)
+    aparecer_aleatorio(tablero, MONSTRUO)
     aparecer_aleatorio(tablero, MONSTRUO)
     aparecer_aleatorio(tablero, MANZANA)
 
@@ -279,6 +327,13 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
         VIDA -= 1
         if VIDA <= 0:
             return "derrota", pos_jugador,manzanas_comidas
+        else:
+            tablero[ind_actual_fila][ind_actual_col] = SUELO
+            tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
+
+            aparecer_aleatorio(tablero, MONSTRUO)
+            aparecer_aleatorio(tablero, MONSTRUO)
+            return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
 
     if pos_elem == MANZANA:
         manzanas_comidas += 1
