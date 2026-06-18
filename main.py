@@ -111,7 +111,7 @@ def poblar_tablero(tablero):
     aparecer_aleatorio(tablero, MANZANA)
 
 
-def refrescar_tablero(screen, tablero):
+def refrescar_tablero(screen, tablero, img_jugador):
     """
     Dibuja el estado actual del tablero en la pantalla.
 
@@ -153,12 +153,7 @@ def refrescar_tablero(screen, tablero):
             elif tablero[i][j] == JUGADOR:
                 # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
                 # con un radio definido por la variable "radio" (ancho_elem / 2).
-                pygame.draw.circle(
-                    screen,
-                    "green",
-                    (pos_x + radio, pos_y + radio),
-                    radio,
-                )
+                screen.blit(img_jugador, [pos_x + 2, pos_y + 2])
             elif tablero[i][j] == MANZANA:
                 screen.blit(apple,[pos_x,pos_y])
             elif tablero[i][j] == SUELO:
@@ -174,12 +169,7 @@ def refrescar_tablero(screen, tablero):
             elif tablero[i][j] == JUGADOR:
                 # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
                 # con un radio definido por la variable "radio" (ancho_elem / 2).
-                pygame.draw.circle(
-                    screen,
-                    "green",
-                    (pos_x + radio, pos_y + radio),
-                    radio,
-                )
+                screen.blit(img_jugador, [pos_x + 2, pos_y + 2])
             elif tablero[i][j] == MANZANA:
               screen.blit(floor,[pos_x,pos_y])
               screen.blit(apple,[pos_x,pos_y])
@@ -403,7 +393,19 @@ def main():
     tiempo_ultimo_mov = 0
     manzanas_comidas = 0
     mostrar_pantalla(screen, PANTALLA_INICIO)
+    img_arriba = pygame.image.load("data/imagenes/player/up.png").convert_alpha()
+    img_abajo = pygame.image.load("data/imagenes/player/down.png").convert_alpha()
+    img_izq = pygame.image.load("data/imagenes/player/left.png").convert_alpha()
+    img_der = pygame.image.load("data/imagenes/player/right.png").convert_alpha()
 
+    img_arriba = pygame.transform.scale(img_arriba, (53, 53))
+    img_abajo = pygame.transform.scale(img_abajo, (53, 53))
+    img_izq = pygame.transform.scale(img_izq, (53, 53))
+    img_der = pygame.transform.scale(img_der, (53, 53))
+
+    img_actual = img_abajo
+
+    img_actual = img_abajo
     # Este es el bucle principal del juego, todo lo que sucede en el juego
     # está aquí.
     while running:
@@ -420,10 +422,11 @@ def main():
                         tablero, pos_jugador = reiniciar()
                         manzanas_comidas = 0
                         direccion = (0, 0)
+                        img_actual = img_abajo
                         # Obtiene tiempo en milisegundos
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
-                        refrescar_tablero(screen, tablero)
+                        refrescar_tablero(screen, tablero, img_actual)
                     elif evento.key == pygame.K_i:
                         estado = ESTADO_INSTRUCCIONES
                         mostrar_pantalla(screen, PANTALLA_INSTRUCCIONES)
@@ -437,9 +440,10 @@ def main():
                         tablero, pos_jugador = reiniciar()
                         manzanas_comidas = 0
                         direccion = (0, 0)
+                        img_actual = img_abajo
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
-                        refrescar_tablero(screen, tablero)
+                        refrescar_tablero(screen, tablero, img_actual)
 
                     if evento.key == pygame.K_ESCAPE:
                         estado = ESTADO_INICIO
@@ -480,7 +484,20 @@ def main():
                         VIDA = 3
                         mostrar_pantalla(screen, PANTALLA_DERROTA)
                     else:
-                        refrescar_tablero(screen, tablero)
+                        if direccion == (0, -1):
+                          img_actual = img_arriba
+
+                        elif direccion == (0, 1):
+                          img_actual = img_abajo
+
+                        elif direccion == (-1, 0):
+                         img_actual = img_izq
+
+                        elif direccion == (1, 0):
+                         img_actual = img_der
+
+                        refrescar_tablero(screen, tablero, img_actual)
+                        
                 
                 
 
