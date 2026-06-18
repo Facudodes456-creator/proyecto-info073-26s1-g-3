@@ -12,6 +12,10 @@ Implementado
 
 -Un número de manzanas necesarias para completar el nivel 
 -Implementación de imágenes 
+-Implementacion de la mecanica de pasos, al comer una manzana, se añaden 5 pasos adicionales/
+-Implementacion de un nuevo obstaculo (un monstruo)
+-Implementacion de mecanica VIDA
+
 
 
 Algunas de las funcionalidades que nos faltó implementar fueron: 
@@ -21,7 +25,9 @@ En Proceso
 
 
 - implementación inicial de efectos de sonido 
--* Trabajando en las pantallas del juego aunque no se encuentran implementadas en el proyecto 
+-* Trabajando en las pantallas del juego aunque no se encuentran implementadas en el proyecto
+- Que el monstruo se mueva de forma randomizada y da;e al enemigo
+- Gestionar el overlap entre objects de distintos ids
 
 
 Falta por implementar
