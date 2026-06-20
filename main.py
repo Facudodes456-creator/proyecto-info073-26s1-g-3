@@ -32,6 +32,51 @@ MANZANA = 3
 MANZANAS_OBJETIVO = 5
 MAX_PASOS = 50
 VIDA = 3
+piso = 0
+
+#Diccionario que contiene informacion esencial de cada piso
+pisos_datos = {
+    1 : {
+        "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 1
+            "Monstruo" : "data/pisos/1/monstruo.png",
+            "Piso" : "data/pisos/1/suelo.png",
+            "Manzana" : "data/pisos/1/manzana.png",
+            "Pared" : "data/pisos/1/pared.png"
+        },
+        "Datos" : { #Aqui esta la logica del piso correspondiente
+            "MONSTRUOS_MAX" : 2,
+            "OBSTACULOS_MAX" : 2,
+        },
+        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
+    },
+        2 : {
+        "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 2
+            "Monstruo" : "data/pisos/2/monstruo.png",
+            "Piso" : "data/pisos/2/suelo.png",
+            "Manzana" : "data/pisos/2/manzana.png",
+            "Pared" : "data/pisos/2/pared.png"
+        },
+        "Datos" : { #Aqui esta la logica del piso correspondiente
+            "MONSTRUOS_MAX" : 4,
+            "OBSTACULOS_MAX" : 4,
+        },
+        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
+    },
+        3 : {
+        "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 3
+            "Monstruo" : "data/pisos/3/monstruo.png",
+            "Piso" : "data/pisos/3/suelo.png",
+            "Manzana" : "data/pisos/3/manzana.png",
+            "Pared" : "data/pisos/3/pared.png"
+        },
+        "Datos" : { #Aqui esta la logica del piso correspondiente
+            "MONSTRUOS_MAX" : 10,
+            "OBSTACULOS_MAX" : 10,
+        },
+        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
+    },
+
+}
 
 # Variable global para pasos restantes, y pasos realizados
 restantes = MAX_PASOS
@@ -44,6 +89,8 @@ print(restantes)
 FILAS = 15
 COLUMNAS = 15
 
+ACHO_VENTANA = 1040
+ALTO_VENTANA = 800
 
 def aparecer_aleatorio(tablero, id_elem):
     """
@@ -60,6 +107,7 @@ def aparecer_aleatorio(tablero, id_elem):
     # Debemos detectar los espacios vacíos, para ello recorremos
     # el tablero y almacenamos tuplas de (columna, fila) las posiciones
     # en las que un elemento "VACIO" (el número 0 en este caso) se encuentre.
+
     vacios = []
 
     # Forma vista en clases de recorrer el arreglo multidimensional.
@@ -100,34 +148,58 @@ def aparecer_aleatorio(tablero, id_elem):
 
 
 def poblar_tablero(tablero):
+    global piso
+    global pisos_datos
+
+
     """
     Coloca un obstáculo y la manzana en el tablero.
 
     Parámetros:
         - tablero: El tablero con sus posiciones actuales.
     """
-    aparecer_aleatorio(tablero, OBSTACULO)
-    aparecer_aleatorio(tablero, MONSTRUO)
+    obstaculos_max = pisos_datos[piso]["Datos"]["OBSTACULOS_MAX"]
+    monstruos_max = pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"]
+
+    for i in range(obstaculos_max):
+        aparecer_aleatorio(tablero, OBSTACULO)
+    
+    for i in range(monstruos_max):
+        aparecer_aleatorio(tablero, MONSTRUO)
+
+
     aparecer_aleatorio(tablero, MANZANA)
 
 
 def refrescar_tablero(screen, tablero, img_jugador):
+    global piso
+    global pisos_datos
     """
     Dibuja el estado actual del tablero en la pantalla.
 
     Parámetros:
         - screen: La pantalla sobre la cual estamos dibujando.
         - tablero: El tablero con sus posiciones actuales.
+        - img_jugador:
+        - piso : el piso en el que esta el jugador actualmente
     """
 
     # Rellena la pantalla con el color gris, básicamente pintando
     # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
     
-    wall = pygame.image.load("data/imagenes/pared.png").convert()
-    apple = pygame.image.load("data/imagenes/manzana.png").convert_alpha()
-    floor = pygame.image.load("data/imagenes/suelo.png").convert()
-    monster = pygame.image.load("data/imagenes/monstruo.png").convert()
+    #wall = pygame.image.load("data/imagenes/pared.png").convert()
+    #apple = pygame.image.load("data/imagenes/manzana.png").convert_alpha()
+    #floor = pygame.image.load("data/imagenes/suelo.png").convert()
+    #monster = pygame.image.load("data/imagenes/monstruo.png").convert()
+    
+    #Aqui iran las variables usando de forma modular el dato "piso" parseado:
+
+    wall = pygame.image.load(pisos_datos[piso]["Texturas"]["Pared"]).convert()
+    apple = pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert()
+    floor = pygame.image.load(pisos_datos[piso]["Texturas"]["Piso"]).convert()
+    monster = pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert()
+
 
     # Podemos calcular el tamaño en pixeles que tendrá cada
     # casilla al dividir tanto la altura de la pantalla (screen.get_height())
@@ -247,6 +319,8 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
     global restantes
     global pasos
     global VIDA
+    global pisos_datos
+
     dir_col, dir_fila = direccion
     ind_actual_col, ind_actual_fila = (
         pos_jugador  # Tupla (columna, fila) que representa los índices en el tablero.
@@ -385,6 +459,7 @@ def main():
     global restantes
     global pasos
     global VIDA
+    global piso
 
     estado = ESTADO_INICIO
     tablero = []
@@ -419,6 +494,7 @@ def main():
             if evento.type == pygame.KEYDOWN:
                 if estado == ESTADO_INICIO:
                     if evento.key == pygame.K_SPACE:
+                        piso += 1
                         tablero, pos_jugador = reiniciar()
                         manzanas_comidas = 0
                         direccion = (0, 0)
@@ -437,6 +513,8 @@ def main():
 
                 elif estado in (ESTADO_DERROTA, ESTADO_VICTORIA):
                     if evento.key == pygame.K_r:
+                        if estado == ESTADO_VICTORIA:
+                            piso = min(piso + 1, 3)
                         tablero, pos_jugador = reiniciar()
                         manzanas_comidas = 0
                         direccion = (0, 0)
@@ -476,7 +554,7 @@ def main():
                     tiempo_ultimo_mov = tiempo_actual
                     pasos += 1
                     restantes = MAX_PASOS - pasos
-                    pygame . display . set_caption ( f" Juego - Pasos restantes : { restantes}")
+                    pygame . display . set_caption ( f" Juego - Pasos restantes : {restantes}")
                     if pasos >= MAX_PASOS:
                         estado = ESTADO_DERROTA
                         restantes = MAX_PASOS
