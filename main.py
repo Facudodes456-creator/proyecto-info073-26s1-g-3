@@ -46,6 +46,10 @@ pisos_datos = {
             "Manzana" : "data/pisos/1/manzana.png",
             "Pared" : "data/pisos/1/pared.png"
         },
+        "Sonidos" : { # Ubicacion de los sonidos que se usaran en el piso
+            "Musica" : "data/pisos/1/test.mp3",
+            "Hola" : "gamma dan is fucking hell istfg im never clearin that shit"
+        },
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 2,
             "OBSTACULOS_MAX" : 2,
@@ -62,6 +66,10 @@ pisos_datos = {
             "Manzana" : "data/pisos/2/manzana.png",
             "Pared" : "data/pisos/2/pared.png"
         },
+        "Sonidos" : {
+            "Musica" : "data/pisos/2/test.mp3",
+            "Hola" : "gamma dan is fucking hell istfg im never clearin that shit"
+        },
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 4,
             "OBSTACULOS_MAX" : 4,
@@ -77,6 +85,10 @@ pisos_datos = {
             "Piso" : "data/pisos/3/suelo.png",
             "Manzana" : "data/pisos/3/manzana.png",
             "Pared" : "data/pisos/3/pared.png"
+        },
+        "Sonidos" : {
+            "Musica" : "data/pisos/3/test.mp3",
+            "Hola" : "gamma dan is fucking hell istfg im never clearin that shit"
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 10,
@@ -98,6 +110,7 @@ STATS = {
     "Vidas_Adicionales" : 0, # Al consumir 4 puntos disponibles en mejorar esta metrica, se obtendra una resurreccion
     "Puntos_disponibles" : 0, # Aqui guardaremos los puntos disponibles, se conseguiran 4 puntos cada piso completado, y 0.5 puntos por cada monstruo derrotado en el piso (No cuentan los monstruos derrotados si no pasas el piso)
     "Armadura" : 1, # Cada punto de armadura es 1 punto de defensa que protege al jugador de 1 solo hit por cada punto de armadura, por ejemplo si tienes 2 de armadura y 4 de vida, y tocas a 3 monstruos, tu vida restante sera de 3, 2 golpes habran sido tankeados por la armadura
+    "Armadura_Current" : 1,
     "Pasos_Max" : 75
 }
 
@@ -428,7 +441,11 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
     if pos_elem == OBSTACULO:
         return "derrota", pos_jugador,manzanas_comidas
     elif pos_elem == MONSTRUO:
-        STATS["Vida_Actual"] -= 1
+        if STATS["Armadura_Current"] > 0:
+            STATS["Armadura_Current"] -= 1
+        else:
+            STATS["Vida_Actual"] -= 1
+
         monstruos_current = max(0, monstruos_current - 1)
         if STATS["Vida_Actual"] <= 0:
             return "derrota", pos_jugador,manzanas_comidas
@@ -601,6 +618,11 @@ def main():
                         elapsed_time_monstruo = pygame.time.get_ticks()
                         elapsed_time_manzana = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
+                        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
+                        pygame.mixer.music.set_volume = 0.5
+                        pygame.mixer.music.play(-1)
+
+
                         refrescar_tablero(screen, tablero, img_actual)
                     elif evento.key == pygame.K_i:
                         estado = ESTADO_INSTRUCCIONES
@@ -611,6 +633,7 @@ def main():
                     mostrar_pantalla(screen, PANTALLA_INICIO)
 
                 elif estado in (ESTADO_DERROTA, ESTADO_VICTORIA):
+                    pygame.mixer.music.pause()
                     if evento.key == pygame.K_r:
                         if estado == ESTADO_VICTORIA:
                             piso = min(piso + 1, 3)
@@ -622,13 +645,14 @@ def main():
                         elapsed_time_monstruo = pygame.time.get_ticks()
                         elapsed_time_manzana = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
+                        pygame.mixer.music.unpause()
                         refrescar_tablero(screen, tablero, img_actual)
 
                     if evento.key == pygame.K_ESCAPE:
                         estado = ESTADO_INICIO
                         mostrar_pantalla(screen, PANTALLA_INICIO)
 
-                elif estado == ESTADO_JUGANDO:
+                elif estado == ESTADO_JUGANDO:              
                     direccion = cambiar_direccion(pygame.key.get_pressed(), direccion)
 
         if estado == ESTADO_JUGANDO:
@@ -651,12 +675,14 @@ def main():
                     restantes = STATS["Pasos_Max"]
                     pasos = 0
                     STATS["Vida_Actual"] = STATS["Vida"]
+                    STATS["Armadura_Current"] = STATS["Armadura"]
                     mostrar_pantalla(screen, PANTALLA_DERROTA)
                 elif resultado == "victoria":
                     estado = ESTADO_VICTORIA
                     restantes = STATS["Pasos_Max"]
                     pasos = 0
                     STATS["Vida_Actual"] = STATS["Vida"]
+                    STATS["Armadura_Current"] = STATS["Armadura"]
                     mostrar_pantalla(screen, PANTALLA_VICTORIA)
                 else:
                     tiempo_ultimo_mov = tiempo_actual
@@ -668,6 +694,7 @@ def main():
                         restantes = STATS["Pasos_Max"]
                         pasos = 0
                         STATS["Vida_Actual"] = STATS["Vida"]
+                        STATS["Armadura_Current"] = STATS["Armadura"]
                         mostrar_pantalla(screen, PANTALLA_DERROTA)
                     else:
                         if direccion == (0, -1):
