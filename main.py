@@ -205,7 +205,7 @@ def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
         STATS["Vida"] += (puntos_inputeados // 2)
         msj = f"Exito. Tus puntos de vida ahora son {STATS['Vida']}."
     elif id_stat == "Velocidad":
-        if puntos_inputeados // 2 != 0 and puntos_inputeados > 1:
+        if puntos_inputeados % 2 != 0 and puntos_inputeados > 1:
             puntos_inputeados -= 1
         elif puntos_inputeados < 1:
            return "Error, no tienes puntos suficientes."
