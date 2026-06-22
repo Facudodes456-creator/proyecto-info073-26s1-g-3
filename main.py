@@ -610,12 +610,12 @@ def main():
             if (tiempo_actual - elapsed_time_monstruo) >= pisos_datos[piso]["Datos"]["SPAWN_RATE"]:
                 spawn_objects(tablero, MONSTRUO)
                 elapsed_time_monstruo = tiempo_actual
-                refrescar_tablero(tablero)
+                refrescar_tablero(screen, tablero, img_actual)
 
             if (tiempo_actual - elapsed_time_manzana) >= pisos_datos[piso]["Datos"]["SPAWN_RATE_MANZANAS"]:
                 spawn_objects(tablero, MANZANA)
                 elapsed_time_manzana = tiempo_actual
-                refrescar_tablero(tablero)
+                refrescar_tablero(screen, tablero, img_actual)
 
             # La variable STATS["Velocidad"] hace que si no han pasado esa cantidad de ticks,
             # entonces no se avanzará en el tablero.
