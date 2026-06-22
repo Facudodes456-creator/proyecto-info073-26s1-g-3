@@ -30,9 +30,12 @@ MONSTRUO = 4
 JUGADOR = 2
 MANZANA = 3
 MANZANAS_OBJETIVO = 5
-MAX_PASOS = 50
-VIDA = 3
+
+#Variables misc
 piso = 0
+monstruos_current = 0
+manzanas_current = 0
+manzanas_max = 2
 
 #Diccionario que contiene informacion esencial de cada piso
 pisos_datos = {
@@ -46,6 +49,9 @@ pisos_datos = {
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 2,
             "OBSTACULOS_MAX" : 2,
+            "SPAWN_RATE" : 6000, # Cada 6000 ticks (O 6 segundos) aparecera un nuevo monstruo mientras aun no se haya llegado a la capacidad maxima de monstruos
+            "SPAWN_RATE_MANZANAS" : 5000, # Lo mismo, cada 7 segundos aparecera una nueva manzana (Solo pueden haber un maximo de 2 manzanas en el tablero)
+            "MANZANAS_OBJETIVO" : 4
         },
         "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
@@ -59,6 +65,9 @@ pisos_datos = {
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 4,
             "OBSTACULOS_MAX" : 4,
+            "SPAWN_RATE" : 4000,
+            "SPAWN_RATE_MANZANAS" : 6000,
+            "MANZANAS_OBJETIVO" : 8,
         },
         "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
@@ -72,16 +81,29 @@ pisos_datos = {
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 10,
             "OBSTACULOS_MAX" : 10,
+            "SPAWN_RATE" : 2000,
+            "SPAWN_RATE_MANZANAS" : 8000,
+            "MANZANAS_OBJETIVO" : 11,
         },
         "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
 
 }
 
+#Diccionario que contiene la informacion de nuestro personaje
+STATS = {
+    "Vida" : 3,
+    "Vida_Actual" : 3,
+    "Velocidad" : 200, # Esta variable hace alucion a el  retraso entre cada movimiento
+    "Vidas_Adicionales" : 0, # Al consumir 4 puntos disponibles en mejorar esta metrica, se obtendra una resurreccion
+    "Puntos_disponibles" : 0, # Aqui guardaremos los puntos disponibles, se conseguiran 4 puntos cada piso completado, y 0.5 puntos por cada monstruo derrotado en el piso (No cuentan los monstruos derrotados si no pasas el piso)
+    "Armadura" : 1, # Cada punto de armadura es 1 punto de defensa que protege al jugador de 1 solo hit por cada punto de armadura, por ejemplo si tienes 2 de armadura y 4 de vida, y tocas a 3 monstruos, tu vida restante sera de 3, 2 golpes habran sido tankeados por la armadura
+    "Pasos_Max" : 75
+}
+
 # Variable global para pasos restantes, y pasos realizados
-restantes = MAX_PASOS
+restantes = STATS["Pasos_Max"]
 pasos = 0
-print(restantes)
 
 # Tamaño del tablero
 # Si se cambian estas constantes, se debe modificar la definición
@@ -93,6 +115,11 @@ ACHO_VENTANA = 1040
 ALTO_VENTANA = 800
 
 def aparecer_aleatorio(tablero, id_elem):
+    
+    global monstruos_current
+    global manzanas_current
+    global pisos_datos
+
     """
     Coloca un elemento en una casilla vacía aleatoria del tablero.
 
@@ -142,14 +169,59 @@ def aparecer_aleatorio(tablero, id_elem):
 
     # Finalmente, colocamos el elemento al poner su número en la casilla
     # del tablero correspondiente.
+    
+    if id_elem == MONSTRUO:
+        monstruos_current = min(monstruos_current + 1, pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"])
+    elif id_elem == MANZANA:
+        manzanas_current = min(manzanas_current + 1, manzanas_max)
     tablero[fila][columna] = id_elem
 
     return columna, fila
 
+def cambiar_stats(id_stat : str, puntos_inputeados : int):
+    global STATS
+    
+    if puntos_inputeados > STATS["Puntos_disponibles"]:
+        return "Error, no tienes puntos suficientes."
+    
+    msj = ""
+    if id_stat == "Vida": #Cada dos puntos disponibles obtienes 1 punto de vida
+        if puntos_inputeados % 2 != 0 and puntos_inputeados > 1:
+            puntos_inputeados -= 1
+        elif puntos_inputeados < 1:
+            return "Error, no tienes puntos suficientes."
+            
+        
+        STATS["Vida"] += (puntos_inputeados // 2)
+        msj = f"Exito. Tus puntos de vida ahora son {STATS['Vida']}."
+    elif id_stat == "Velocidad":
+        if puntos_inputeados // 2 != 0 and puntos_inputeados > 1:
+            puntos_inputeados -= 1
+        elif puntos_inputeados < 1:
+           return "Error, no tienes puntos suficientes."
+        
+        STATS["Velocidad"] = max(75, STATS["Velocidad"] - (puntos_inputeados * 10))
+        msj =  f"Exito. Tu velocidad se reducio a {STATS['Velocidad']} milisegundos."
+    elif id_stat == "Vidas_Adicionales":
+        if puntos_inputeados < 4:
+            return "Error, no tienes puntos suficientes."
+        else:
+            puntos_inputeados = 4
+
+            STATS["Vidas_Adicionales"] += 1
+            msj =  f"Exito. Ahora tienes {STATS['Vidas_Adicionales']} vidas adicionales."
+    elif id_stat == "Pasos_Max":
+
+        STATS["Pasos_Max"] += (puntos_inputeados * 5)
+        msj =  f"Exito. Ahora tus pasos maximos son {STATS['Pasos_Max']} pasos."
+    
+    STATS["Puntos_disponibles"] -= puntos_inputeados
+    return msj
 
 def poblar_tablero(tablero):
     global piso
     global pisos_datos
+    global monstruos_current
 
 
     """
@@ -166,9 +238,23 @@ def poblar_tablero(tablero):
     
     for i in range(monstruos_max):
         aparecer_aleatorio(tablero, MONSTRUO)
+    
+    for i in range(manzanas_max):
+        aparecer_aleatorio(tablero, MANZANA)
+
+def spawn_objects(tablero, id_elem):
+    global monstruos_current
+    global piso
+    global pisos_datos
+
+    if id_elem == MANZANA:
+        if manzanas_current < manzanas_max:
+            aparecer_aleatorio(tablero, id_elem)
+    elif id_elem == MONSTRUO:
+        if monstruos_current < pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"]:
+            aparecer_aleatorio(tablero, id_elem)
 
 
-    aparecer_aleatorio(tablero, MANZANA)
 
 
 def refrescar_tablero(screen, tablero, img_jugador):
@@ -196,7 +282,7 @@ def refrescar_tablero(screen, tablero, img_jugador):
     #Aqui iran las variables usando de forma modular el dato "piso" parseado:
 
     wall = pygame.image.load(pisos_datos[piso]["Texturas"]["Pared"]).convert()
-    apple = pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert()
+    apple = pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert_alpha()
     floor = pygame.image.load(pisos_datos[piso]["Texturas"]["Piso"]).convert()
     monster = pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert()
 
@@ -318,8 +404,10 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
     # con información de la dirección y posición del jugador.
     global restantes
     global pasos
-    global VIDA
+    global STATS
     global pisos_datos
+    global monstruos_current
+    global manzanas_current
 
     dir_col, dir_fila = direccion
     ind_actual_col, ind_actual_fila = (
@@ -340,23 +428,23 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
     if pos_elem == OBSTACULO:
         return "derrota", pos_jugador,manzanas_comidas
     elif pos_elem == MONSTRUO:
-        VIDA -= 1
-        if VIDA <= 0:
+        STATS["Vida_Actual"] -= 1
+        monstruos_current = max(0, monstruos_current - 1)
+        if STATS["Vida_Actual"] <= 0:
             return "derrota", pos_jugador,manzanas_comidas
 
     if pos_elem == MANZANA:
         manzanas_comidas += 1
+        manzanas_current = max(0, manzanas_current - 1)
         # Agregamos 5 pasos a el jugador, procurando de no sobrepasar los 50 pasos maximos.
         pasos -= 6
-        
 
         tablero[ind_actual_fila][ind_actual_col] = SUELO
         tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
-        
-        if manzanas_comidas >= MANZANAS_OBJETIVO:
+
+        if manzanas_comidas >= pisos_datos[piso]["Datos"]["MANZANAS_OBJETIVO"]:
             return "victoria", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
-            
-        aparecer_aleatorio(tablero, MANZANA)
+
         return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
 
     # Movimiento normal, si es que no encontramos manzana ni obstáculo.
@@ -367,6 +455,9 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
 
 
 def reiniciar():
+    global monstruos_current
+    global manzanas_current
+
     """
     Crea un nuevo tablero y estado para una nueva partida.
 
@@ -410,6 +501,8 @@ def reiniciar():
     # tablero = [[VACIO] * COLUMNAS for _ in range(FILAS)]
     # El _ en el "for" indica que no usamos la variable con la que iteramos.
 
+    monstruos_current = 0
+    manzanas_current = 0
     poblar_tablero(tablero)
 
     # Colocamos al jugador en una posición aleatoria.
@@ -458,8 +551,9 @@ def main():
 
     global restantes
     global pasos
-    global VIDA
+    global STATS
     global piso
+    global monstruos_current
 
     estado = ESTADO_INICIO
     tablero = []
@@ -483,6 +577,9 @@ def main():
     img_actual = img_abajo
     # Este es el bucle principal del juego, todo lo que sucede en el juego
     # está aquí.
+    
+    elapsed_time_monstruo = pygame.time.get_ticks()
+    elapsed_time_manzana = pygame.time.get_ticks()
     while running:
         # Se analizan los eventos del bucle actual.
         for evento in pygame.event.get():
@@ -501,6 +598,8 @@ def main():
                         img_actual = img_abajo
                         # Obtiene tiempo en milisegundos
                         tiempo_ultimo_mov = pygame.time.get_ticks()
+                        elapsed_time_monstruo = pygame.time.get_ticks()
+                        elapsed_time_manzana = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
                         refrescar_tablero(screen, tablero, img_actual)
                     elif evento.key == pygame.K_i:
@@ -520,6 +619,8 @@ def main():
                         direccion = (0, 0)
                         img_actual = img_abajo
                         tiempo_ultimo_mov = pygame.time.get_ticks()
+                        elapsed_time_monstruo = pygame.time.get_ticks()
+                        elapsed_time_manzana = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
                         refrescar_tablero(screen, tablero, img_actual)
 
@@ -532,6 +633,13 @@ def main():
 
         if estado == ESTADO_JUGANDO:
             tiempo_actual = pygame.time.get_ticks()  # En milisegundos
+            if (tiempo_actual - elapsed_time_monstruo) >= pisos_datos[piso]["Datos"]["SPAWN_RATE"]:
+                spawn_objects(tablero, MONSTRUO)
+                elapsed_time_monstruo = tiempo_actual
+
+            if (tiempo_actual - elapsed_time_manzana) >= pisos_datos[piso]["Datos"]["SPAWN_RATE_MANZANAS"]:
+                spawn_objects(tablero, MANZANA)
+                elapsed_time_manzana = tiempo_actual
 
             # La variable RETRASO hace que si no han pasado esa cantidad de ticks,
             # entonces no se avanzará en el tablero.
@@ -540,26 +648,26 @@ def main():
 
                 if resultado == "derrota":
                     estado = ESTADO_DERROTA
-                    restantes = MAX_PASOS
+                    restantes = STATS["Pasos_Max"]
                     pasos = 0
-                    VIDA = 3
+                    STATS["Vida_Actual"] = STATS["Vida"]
                     mostrar_pantalla(screen, PANTALLA_DERROTA)
                 elif resultado == "victoria":
                     estado = ESTADO_VICTORIA
-                    restantes = MAX_PASOS
+                    restantes = STATS["Pasos_Max"]
                     pasos = 0
-                    VIDA = 3
+                    STATS["Vida_Actual"] = STATS["Vida"]
                     mostrar_pantalla(screen, PANTALLA_VICTORIA)
                 else:
                     tiempo_ultimo_mov = tiempo_actual
                     pasos += 1
-                    restantes = MAX_PASOS - pasos
+                    restantes = STATS["Pasos_Max"] - pasos
                     pygame . display . set_caption ( f" Juego - Pasos restantes : {restantes}")
-                    if pasos >= MAX_PASOS:
+                    if pasos >= STATS["Pasos_Max"]:
                         estado = ESTADO_DERROTA
-                        restantes = MAX_PASOS
+                        restantes = STATS["Pasos_Max"]
                         pasos = 0
-                        VIDA = 3
+                        STATS["Vida_Actual"] = STATS["Vida"]
                         mostrar_pantalla(screen, PANTALLA_DERROTA)
                     else:
                         if direccion == (0, -1):
