@@ -20,9 +20,6 @@ PANTALLA_INSTRUCCIONES = "pantalla_instrucciones.bmp"
 PANTALLA_VICTORIA = "pantalla_victoria.bmp"
 PANTALLA_DERROTA = "pantalla_derrota.bmp"
 
-# Para evitar que el jugador se mueva demasiado rápido
-RETRASO = 200
-
 # Códigos de cada elemento del tablero
 SUELO = 0
 OBSTACULO = 1
@@ -191,7 +188,7 @@ def aparecer_aleatorio(tablero, id_elem):
 
     return columna, fila
 
-def cambiar_stats(id_stat : str, puntos_inputeados : int):
+def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
     global STATS
     
     if puntos_inputeados > STATS["Puntos_disponibles"]:
@@ -619,7 +616,7 @@ def main():
                         elapsed_time_manzana = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
                         pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
-                        pygame.mixer.music.set_volume = 0.5
+                        pygame.mixer.music.set_volume(0.5)
                         pygame.mixer.music.play(-1)
 
 
@@ -665,9 +662,9 @@ def main():
                 spawn_objects(tablero, MANZANA)
                 elapsed_time_manzana = tiempo_actual
 
-            # La variable RETRASO hace que si no han pasado esa cantidad de ticks,
+            # La variable STATS["Velocidad"] hace que si no han pasado esa cantidad de ticks,
             # entonces no se avanzará en el tablero.
-            if direccion != (0, 0) and tiempo_actual - tiempo_ultimo_mov >= RETRASO:
+            if direccion != (0, 0) and tiempo_actual - tiempo_ultimo_mov >= STATS["Velocidad"]:
                 resultado, pos_jugador, manzanas_comidas = avanzar(tablero, pos_jugador, direccion, manzanas_comidas)
 
                 if resultado == "derrota":
