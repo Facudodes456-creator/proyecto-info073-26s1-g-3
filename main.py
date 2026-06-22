@@ -20,9 +20,6 @@ PANTALLA_INSTRUCCIONES = "pantalla_instrucciones.bmp"
 PANTALLA_VICTORIA = "pantalla_victoria.bmp"
 PANTALLA_DERROTA = "pantalla_derrota.bmp"
 
-# Para evitar que el jugador se mueva demasiado rápido
-RETRASO = 200
-
 # Códigos de cada elemento del tablero
 SUELO = 0
 OBSTACULO = 1   
@@ -30,60 +27,12 @@ MONSTRUO = 4
 JUGADOR = 2
 MANZANA = 3
 MANZANAS_OBJETIVO = 5
-
-# Variables globales para manejar distintos tipos de datos
 MAX_PASOS = 50
 VIDA = 3
 
-# Diccionario que contiene informacion esencial de cada piso
-
-pisos_datos = {
-    1 : {
-        "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 1
-            "Monstruo" : "placeholder",
-            "Piso" : "placeholder",
-            "Manzana" : "placeholder",
-            "Jugador" : "placeholder"
-        },
-        "Datos" : { #Aqui esta la logica del piso correspondiente
-            "MONSTRUOS_MAX" : 2,
-            "OBSTACULOS_MAX" : 2,
-        },
-        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
-    },
-        2 : {
-        "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 2
-            "Monstruo" : "placeholder",
-            "Piso" : "placeholder",
-            "Manzana" : "placeholder",
-            "Jugador" : "placeholder"
-        },
-        "Datos" : { #Aqui esta la logica del piso correspondiente
-            "MONSTRUOS_MAX" : 4,
-            "OBSTACULOS_MAX" : 4,
-        },
-        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
-    },
-        3 : {
-        "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 3
-            "Monstruo" : "placeholder",
-            "Piso" : "placeholder",
-            "Manzana" : "placeholder",
-            "Jugador" : "placeholder"
-        },
-        "Datos" : { #Aqui esta la logica del piso correspondiente
-            "MONSTRUOS_MAX" : 10,
-            "OBSTACULOS_MAX" : 10,
-        },
-        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
-    },
-    
-}
-
 # Variable global para pasos restantes, y pasos realizados
-restantes = MAX_PASOS
+restantes = STATS["Pasos_Max"]
 pasos = 0
-print(restantes)
 
 # Tamaño del tablero
 # Si se cambian estas constantes, se debe modificar la definición
@@ -91,8 +40,15 @@ print(restantes)
 FILAS = 15
 COLUMNAS = 15
 
+ACHO_VENTANA = 1040
+ALTO_VENTANA = 800
 
 def aparecer_aleatorio(tablero, id_elem):
+    
+    global monstruos_current
+    global manzanas_current
+    global pisos_datos
+
     """
     Coloca un elemento en una casilla vacía aleatoria del tablero.
 
@@ -107,6 +63,7 @@ def aparecer_aleatorio(tablero, id_elem):
     # Debemos detectar los espacios vacíos, para ello recorremos
     # el tablero y almacenamos tuplas de (columna, fila) las posiciones
     # en las que un elemento "VACIO" (el número 0 en este caso) se encuentre.
+
     vacios = []
 
     # Forma vista en clases de recorrer el arreglo multidimensional.
@@ -141,12 +98,64 @@ def aparecer_aleatorio(tablero, id_elem):
 
     # Finalmente, colocamos el elemento al poner su número en la casilla
     # del tablero correspondiente.
+    
+    if id_elem == MONSTRUO:
+        monstruos_current = min(monstruos_current + 1, pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"])
+    elif id_elem == MANZANA:
+        manzanas_current = min(manzanas_current + 1, manzanas_max)
     tablero[fila][columna] = id_elem
 
     return columna, fila
 
+def pantalla_stats(): # Funcion donde mostraremos la pantalla de mejorar stats, luego de ganar cada partida
+    return "クソクソクソクソクソ"
+
+def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
+    global STATS
+    
+    if puntos_inputeados > STATS["Puntos_disponibles"]:
+        return "Error, no tienes puntos suficientes."
+    
+    msj = ""
+    if id_stat == "Vida": #Cada dos puntos disponibles obtienes 1 punto de vida
+        if puntos_inputeados % 2 != 0 and puntos_inputeados > 1:
+            puntos_inputeados -= 1
+        elif puntos_inputeados < 1:
+            return "Error, no tienes puntos suficientes."
+            
+        
+        STATS["Vida"] += (puntos_inputeados // 2)
+        msj = f"Exito. Tus puntos de vida ahora son {STATS['Vida']}."
+    elif id_stat == "Velocidad":
+        if puntos_inputeados % 2 != 0 and puntos_inputeados > 1:
+            puntos_inputeados -= 1
+        elif puntos_inputeados < 1:
+           return "Error, no tienes puntos suficientes."
+        
+        STATS["Velocidad"] = max(75, STATS["Velocidad"] - (puntos_inputeados * 10))
+        msj =  f"Exito. Tu velocidad se reducio a {STATS['Velocidad']} milisegundos."
+    elif id_stat == "Vidas_Adicionales":
+        if puntos_inputeados < 4:
+            return "Error, no tienes puntos suficientes."
+        else:
+            puntos_inputeados = 4
+
+            STATS["Vidas_Adicionales"] += 1
+            msj =  f"Exito. Ahora tienes {STATS['Vidas_Adicionales']} vidas adicionales."
+    elif id_stat == "Pasos_Max":
+
+        STATS["Pasos_Max"] += (puntos_inputeados * 5)
+        msj =  f"Exito. Ahora tus pasos maximos son {STATS['Pasos_Max']} pasos."
+    
+    STATS["Puntos_disponibles"] -= puntos_inputeados
+    return msj
 
 def poblar_tablero(tablero):
+    global piso
+    global pisos_datos
+    global monstruos_current
+
+
     """
     Coloca un obstáculo y la manzana en el tablero.
 
@@ -155,94 +164,59 @@ def poblar_tablero(tablero):
     """
     aparecer_aleatorio(tablero, OBSTACULO)
     aparecer_aleatorio(tablero, MONSTRUO)
-    aparecer_aleatorio(tablero, MONSTRUO)
     aparecer_aleatorio(tablero, MANZANA)
 
+def spawn_objects(tablero, id_elem):
+    global monstruos_current
+    global piso
+    global pisos_datos
 
-def refrescar_tablero(screen, tablero):
-    """
-    Dibuja el estado actual del tablero en la pantalla.
+    if id_elem == MANZANA:
+        if manzanas_current < manzanas_max:
+            aparecer_aleatorio(tablero, id_elem)
+    elif id_elem == MONSTRUO:
+        if monstruos_current < pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"]:
+            aparecer_aleatorio(tablero, id_elem)
 
-    Parámetros:
-        - screen: La pantalla sobre la cual estamos dibujando.
-        - tablero: El tablero con sus posiciones actuales.
-    """
 
-    # Rellena la pantalla con el color gris, básicamente pintando
-    # por encima de lo que estaba anteriormente.
+
+
+def refrescar_tablero(screen, tablero, img_jugador):
+    global piso
+    global pisos_datos
+
     screen.fill("gray30")
     
-    wall = pygame.image.load("data/imagenes/pared.png").convert()
-    apple = pygame.image.load("data/imagenes/manzana.png").convert_alpha()
-    floor = pygame.image.load("data/imagenes/suelo.png").convert()
-    monster = pygame.image.load("data/imagenes/monstruo.png").convert()
+    wall = pygame.image.load(pisos_datos[piso]["Texturas"]["Pared"]).convert()
+    apple = pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert_alpha()
+    floor = pygame.image.load(pisos_datos[piso]["Texturas"]["Piso"]).convert()
+    monster = pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert()
 
-    # Podemos calcular el tamaño en pixeles que tendrá cada
-    # casilla al dividir tanto la altura de la pantalla (screen.get_height())
-    # como el ancho (screen.get_width()) por la cantidad de filas y columnas respectivamente.
-    # Por ejemplo en este caso alto_elem sería 800 / 15 = 53.3, lo que nos indica que la
-    # altura de cada elemento es de 53.3 píxeles.
     alto_elem = screen.get_height() / FILAS
     ancho_elem = screen.get_width() / COLUMNAS
-    # Como el jugador es un círculo, se necesita el radio.
-    radio = ancho_elem / 2
 
-    # Posición en eje "y" en unidad de píxeles.
     pos_y = 0
-
     for i in range(FILAS):
-        # Posición en eje "x" en unidad de píxeles.
         pos_x = 0
         for j in range(COLUMNAS):
-            if tablero[i][j] == OBSTACULO:
-                # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
-                # de tamaño (ancho_elem, alto_elem) y color negro.
-                screen.blit(wall,[pos_x,pos_y])
-            elif tablero[i][j] == JUGADOR:
-                # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
-                # con un radio definido por la variable "radio" (ancho_elem / 2).
-                pygame.draw.circle(
-                    screen,
-                    "green",
-                    (pos_x + radio, pos_y + radio),
-                    radio,
-                )
-            elif tablero[i][j] == MANZANA:
-                screen.blit(apple,[pos_x,pos_y])
-            elif tablero[i][j] == SUELO:
-                screen.blit(floor,[pos_x,pos_y])
 
-        # Posición en eje "x" en unidad de píxeles.
-        pos_x = 0
-        for j in range(COLUMNAS):
+            # Dibujamos la base que es el suelo en todos los tiles
+            if tablero[i][j] in (SUELO, JUGADOR, MANZANA, MONSTRUO):
+                screen.blit(floor, [pos_x, pos_y])
+
+            # Aqui dibujamos cada elemento correspondiente encima de el
             if tablero[i][j] == OBSTACULO:
-                # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
-                # de tamaño (ancho_elem, alto_elem) y color negro.
-                screen.blit(wall,[pos_x,pos_y])
+                screen.blit(wall, [pos_x, pos_y])
             elif tablero[i][j] == JUGADOR:
-                # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
-                # con un radio definido por la variable "radio" (ancho_elem / 2).
-                pygame.draw.circle(
-                    screen,
-                    "green",
-                    (pos_x + radio, pos_y + radio),
-                    radio,
-                )
+                screen.blit(img_jugador, [pos_x + 2, pos_y + 2])
             elif tablero[i][j] == MANZANA:
-              screen.blit(floor,[pos_x,pos_y])
-              screen.blit(apple,[pos_x,pos_y])
+                screen.blit(apple, [pos_x, pos_y])
             elif tablero[i][j] == MONSTRUO:
-                screen.blit(floor,[pos_x,pos_y])
                 screen.blit(monster, [pos_x, pos_y])
-            else:
-                screen.blit(floor,[pos_x,pos_y])
-            # Estamos recorriendo los píxeles de la pantalla, por lo que
-            # debemos sumar el ancho y altura en pixeles de cada elemento que
-            # ya hayamos recorrido para avanzar al siguiente.
+
             pos_x += ancho_elem
         pos_y += alto_elem
 
-    # Refresca el contenido que se ve en pantalla.
     pygame.display.flip()
 
 
@@ -304,7 +278,11 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
     # con información de la dirección y posición del jugador.
     global restantes
     global pasos
-    global VIDA
+    global STATS
+    global pisos_datos
+    global monstruos_current
+    global manzanas_current
+
     dir_col, dir_fila = direccion
     ind_actual_col, ind_actual_fila = (
         pos_jugador  # Tupla (columna, fila) que representa los índices en el tablero.
@@ -324,8 +302,13 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
     if pos_elem == OBSTACULO:
         return "derrota", pos_jugador,manzanas_comidas
     elif pos_elem == MONSTRUO:
-        VIDA -= 1
-        if VIDA <= 0:
+        if STATS["Armadura_Current"] > 0:
+            STATS["Armadura_Current"] -= 1
+        else:
+            STATS["Vida_Actual"] -= 1
+
+        monstruos_current = max(0, monstruos_current - 1)
+        if STATS["Vida_Actual"] <= 0:
             return "derrota", pos_jugador,manzanas_comidas
         else:
             tablero[ind_actual_fila][ind_actual_col] = SUELO
@@ -337,17 +320,16 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
 
     if pos_elem == MANZANA:
         manzanas_comidas += 1
+        manzanas_current = max(0, manzanas_current - 1)
         # Agregamos 5 pasos a el jugador, procurando de no sobrepasar los 50 pasos maximos.
         pasos -= 6
-        
 
         tablero[ind_actual_fila][ind_actual_col] = SUELO
         tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
-        
-        if manzanas_comidas >= MANZANAS_OBJETIVO:
+
+        if manzanas_comidas >= pisos_datos[piso]["Datos"]["MANZANAS_OBJETIVO"]:
             return "victoria", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
-            
-        aparecer_aleatorio(tablero, MANZANA)
+
         return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
 
     # Movimiento normal, si es que no encontramos manzana ni obstáculo.
@@ -358,6 +340,9 @@ def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
 
 
 def reiniciar():
+    global monstruos_current
+    global manzanas_current
+
     """
     Crea un nuevo tablero y estado para una nueva partida.
 
@@ -401,6 +386,8 @@ def reiniciar():
     # tablero = [[VACIO] * COLUMNAS for _ in range(FILAS)]
     # El _ en el "for" indica que no usamos la variable con la que iteramos.
 
+    monstruos_current = 0
+    manzanas_current = 0
     poblar_tablero(tablero)
 
     # Colocamos al jugador en una posición aleatoria.
@@ -449,7 +436,9 @@ def main():
 
     global restantes
     global pasos
-    global VIDA
+    global STATS
+    global piso
+    global monstruos_current
 
     estado = ESTADO_INICIO
     tablero = []
@@ -458,9 +447,24 @@ def main():
     tiempo_ultimo_mov = 0
     manzanas_comidas = 0
     mostrar_pantalla(screen, PANTALLA_INICIO)
+    img_arriba = pygame.image.load("data/imagenes/player/up.png").convert_alpha()
+    img_abajo = pygame.image.load("data/imagenes/player/down.png").convert_alpha()
+    img_izq = pygame.image.load("data/imagenes/player/left.png").convert_alpha()
+    img_der = pygame.image.load("data/imagenes/player/right.png").convert_alpha()
 
+    img_arriba = pygame.transform.scale(img_arriba, (53, 53))
+    img_abajo = pygame.transform.scale(img_abajo, (53, 53))
+    img_izq = pygame.transform.scale(img_izq, (53, 53))
+    img_der = pygame.transform.scale(img_der, (53, 53))
+
+    img_actual = img_abajo
+
+    img_actual = img_abajo
     # Este es el bucle principal del juego, todo lo que sucede en el juego
     # está aquí.
+    
+    elapsed_time_monstruo = pygame.time.get_ticks()
+    elapsed_time_manzana = pygame.time.get_ticks()
     while running:
         # Se analizan los eventos del bucle actual.
         for evento in pygame.event.get():
@@ -472,13 +476,22 @@ def main():
             if evento.type == pygame.KEYDOWN:
                 if estado == ESTADO_INICIO:
                     if evento.key == pygame.K_SPACE:
+                        piso = min(piso + 1, 3)
                         tablero, pos_jugador = reiniciar()
                         manzanas_comidas = 0
                         direccion = (0, 0)
+                        img_actual = img_abajo
                         # Obtiene tiempo en milisegundos
                         tiempo_ultimo_mov = pygame.time.get_ticks()
+                        elapsed_time_monstruo = pygame.time.get_ticks()
+                        elapsed_time_manzana = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
-                        refrescar_tablero(screen, tablero)
+                        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
+                        pygame.mixer.music.set_volume(0.5)
+                        pygame.mixer.music.play(-1)
+
+
+                        refrescar_tablero(screen, tablero, img_actual)
                     elif evento.key == pygame.K_i:
                         estado = ESTADO_INSTRUCCIONES
                         mostrar_pantalla(screen, PANTALLA_INSTRUCCIONES)
@@ -488,54 +501,86 @@ def main():
                     mostrar_pantalla(screen, PANTALLA_INICIO)
 
                 elif estado in (ESTADO_DERROTA, ESTADO_VICTORIA):
+                    pygame.mixer.music.pause()
                     if evento.key == pygame.K_r:
+                        if estado == ESTADO_VICTORIA:
+                            piso = min(piso + 1, 3)
                         tablero, pos_jugador = reiniciar()
                         manzanas_comidas = 0
                         direccion = (0, 0)
+                        img_actual = img_abajo
                         tiempo_ultimo_mov = pygame.time.get_ticks()
+                        elapsed_time_monstruo = pygame.time.get_ticks()
+                        elapsed_time_manzana = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
-                        refrescar_tablero(screen, tablero)
+                        pygame.mixer.music.unpause()
+                        refrescar_tablero(screen, tablero, img_actual)
 
                     if evento.key == pygame.K_ESCAPE:
                         estado = ESTADO_INICIO
                         mostrar_pantalla(screen, PANTALLA_INICIO)
 
-                elif estado == ESTADO_JUGANDO:
+                elif estado == ESTADO_JUGANDO:              
                     direccion = cambiar_direccion(pygame.key.get_pressed(), direccion)
 
         if estado == ESTADO_JUGANDO:
             tiempo_actual = pygame.time.get_ticks()  # En milisegundos
+            if (tiempo_actual - elapsed_time_monstruo) >= pisos_datos[piso]["Datos"]["SPAWN_RATE"]:
+                spawn_objects(tablero, MONSTRUO)
+                elapsed_time_monstruo = tiempo_actual
+                refrescar_tablero(screen, tablero, img_actual)
 
-            # La variable RETRASO hace que si no han pasado esa cantidad de ticks,
+            if (tiempo_actual - elapsed_time_manzana) >= pisos_datos[piso]["Datos"]["SPAWN_RATE_MANZANAS"]:
+                spawn_objects(tablero, MANZANA)
+                elapsed_time_manzana = tiempo_actual
+                refrescar_tablero(screen, tablero, img_actual)
+
+            # La variable STATS["Velocidad"] hace que si no han pasado esa cantidad de ticks,
             # entonces no se avanzará en el tablero.
-            if direccion != (0, 0) and tiempo_actual - tiempo_ultimo_mov >= RETRASO:
+            if direccion != (0, 0) and tiempo_actual - tiempo_ultimo_mov >= STATS["Velocidad"]:
                 resultado, pos_jugador, manzanas_comidas = avanzar(tablero, pos_jugador, direccion, manzanas_comidas)
 
                 if resultado == "derrota":
                     estado = ESTADO_DERROTA
-                    restantes = MAX_PASOS
+                    restantes = STATS["Pasos_Max"]
                     pasos = 0
-                    VIDA = 3
+                    STATS["Vida_Actual"] = STATS["Vida"]
+                    STATS["Armadura_Current"] = STATS["Armadura"]
                     mostrar_pantalla(screen, PANTALLA_DERROTA)
                 elif resultado == "victoria":
                     estado = ESTADO_VICTORIA
-                    restantes = MAX_PASOS
+                    restantes = STATS["Pasos_Max"]
                     pasos = 0
-                    VIDA = 3
+                    STATS["Vida_Actual"] = STATS["Vida"]
+                    STATS["Armadura_Current"] = STATS["Armadura"]
                     mostrar_pantalla(screen, PANTALLA_VICTORIA)
                 else:
                     tiempo_ultimo_mov = tiempo_actual
                     pasos += 1
-                    restantes = MAX_PASOS - pasos
-                    pygame . display . set_caption ( f" Juego - Pasos restantes : { restantes}")
-                    if pasos >= MAX_PASOS:
+                    restantes = STATS["Pasos_Max"] - pasos
+                    pygame . display . set_caption ( f" Juego - Pasos restantes : {restantes}")
+                    if pasos >= STATS["Pasos_Max"]:
                         estado = ESTADO_DERROTA
-                        restantes = MAX_PASOS
+                        restantes = STATS["Pasos_Max"]
                         pasos = 0
-                        VIDA = 3
+                        STATS["Vida_Actual"] = STATS["Vida"]
+                        STATS["Armadura_Current"] = STATS["Armadura"]
                         mostrar_pantalla(screen, PANTALLA_DERROTA)
                     else:
-                        refrescar_tablero(screen, tablero)
+                        if direccion == (0, -1):
+                          img_actual = img_arriba
+
+                        elif direccion == (0, 1):
+                          img_actual = img_abajo
+
+                        elif direccion == (-1, 0):
+                         img_actual = img_izq
+
+                        elif direccion == (1, 0):
+                         img_actual = img_der
+
+                        refrescar_tablero(screen, tablero, img_actual)
+                        
                 
                 
 
