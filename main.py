@@ -188,6 +188,9 @@ def aparecer_aleatorio(tablero, id_elem):
 
     return columna, fila
 
+def pantalla_stats(): # Funcion donde mostraremos la pantalla de mejorar stats, luego de ganar cada partida
+    return "クソクソクソクソクソ"
+
 def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
     global STATS
     
@@ -270,89 +273,39 @@ def spawn_objects(tablero, id_elem):
 def refrescar_tablero(screen, tablero, img_jugador):
     global piso
     global pisos_datos
-    """
-    Dibuja el estado actual del tablero en la pantalla.
 
-    Parámetros:
-        - screen: La pantalla sobre la cual estamos dibujando.
-        - tablero: El tablero con sus posiciones actuales.
-        - img_jugador:
-        - piso : el piso en el que esta el jugador actualmente
-    """
-
-    # Rellena la pantalla con el color gris, básicamente pintando
-    # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
     
-    #wall = pygame.image.load("data/imagenes/pared.png").convert()
-    #apple = pygame.image.load("data/imagenes/manzana.png").convert_alpha()
-    #floor = pygame.image.load("data/imagenes/suelo.png").convert()
-    #monster = pygame.image.load("data/imagenes/monstruo.png").convert()
-    
-    #Aqui iran las variables usando de forma modular el dato "piso" parseado:
-
     wall = pygame.image.load(pisos_datos[piso]["Texturas"]["Pared"]).convert()
     apple = pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert_alpha()
     floor = pygame.image.load(pisos_datos[piso]["Texturas"]["Piso"]).convert()
     monster = pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert()
 
-
-    # Podemos calcular el tamaño en pixeles que tendrá cada
-    # casilla al dividir tanto la altura de la pantalla (screen.get_height())
-    # como el ancho (screen.get_width()) por la cantidad de filas y columnas respectivamente.
-    # Por ejemplo en este caso alto_elem sería 800 / 15 = 53.3, lo que nos indica que la
-    # altura de cada elemento es de 53.3 píxeles.
     alto_elem = screen.get_height() / FILAS
     ancho_elem = screen.get_width() / COLUMNAS
-    # Como el jugador es un círculo, se necesita el radio.
-    radio = ancho_elem / 2
 
-    # Posición en eje "y" en unidad de píxeles.
     pos_y = 0
-
     for i in range(FILAS):
-        # Posición en eje "x" en unidad de píxeles.
         pos_x = 0
         for j in range(COLUMNAS):
-            if tablero[i][j] == OBSTACULO:
-                # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
-                # de tamaño (ancho_elem, alto_elem) y color negro.
-                screen.blit(wall,[pos_x,pos_y])
-            elif tablero[i][j] == JUGADOR:
-                # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
-                # con un radio definido por la variable "radio" (ancho_elem / 2).
-                screen.blit(img_jugador, [pos_x + 2, pos_y + 2])
-            elif tablero[i][j] == MANZANA:
-                screen.blit(apple,[pos_x,pos_y])
-            elif tablero[i][j] == SUELO:
-                screen.blit(floor,[pos_x,pos_y])
 
-        # Posición en eje "x" en unidad de píxeles.
-        pos_x = 0
-        for j in range(COLUMNAS):
+            # Dibujamos la base que es el suelo en todos los tiles
+            if tablero[i][j] in (SUELO, JUGADOR, MANZANA, MONSTRUO):
+                screen.blit(floor, [pos_x, pos_y])
+
+            # Aqui dibujamos cada elemento correspondiente encima de el
             if tablero[i][j] == OBSTACULO:
-                # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
-                # de tamaño (ancho_elem, alto_elem) y color negro.
-                screen.blit(wall,[pos_x,pos_y])
+                screen.blit(wall, [pos_x, pos_y])
             elif tablero[i][j] == JUGADOR:
-                # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
-                # con un radio definido por la variable "radio" (ancho_elem / 2).
                 screen.blit(img_jugador, [pos_x + 2, pos_y + 2])
             elif tablero[i][j] == MANZANA:
-              screen.blit(floor,[pos_x,pos_y])
-              screen.blit(apple,[pos_x,pos_y])
+                screen.blit(apple, [pos_x, pos_y])
             elif tablero[i][j] == MONSTRUO:
-                screen.blit(floor,[pos_x,pos_y])
                 screen.blit(monster, [pos_x, pos_y])
-            else:
-                screen.blit(floor,[pos_x,pos_y])
-            # Estamos recorriendo los píxeles de la pantalla, por lo que
-            # debemos sumar el ancho y altura en pixeles de cada elemento que
-            # ya hayamos recorrido para avanzar al siguiente.
+
             pos_x += ancho_elem
         pos_y += alto_elem
 
-    # Refresca el contenido que se ve en pantalla.
     pygame.display.flip()
 
 
@@ -605,7 +558,7 @@ def main():
             if evento.type == pygame.KEYDOWN:
                 if estado == ESTADO_INICIO:
                     if evento.key == pygame.K_SPACE:
-                        piso += 1
+                        piso = min(piso + 1, 3)
                         tablero, pos_jugador = reiniciar()
                         manzanas_comidas = 0
                         direccion = (0, 0)
@@ -657,10 +610,12 @@ def main():
             if (tiempo_actual - elapsed_time_monstruo) >= pisos_datos[piso]["Datos"]["SPAWN_RATE"]:
                 spawn_objects(tablero, MONSTRUO)
                 elapsed_time_monstruo = tiempo_actual
+                refrescar_tablero(tablero)
 
             if (tiempo_actual - elapsed_time_manzana) >= pisos_datos[piso]["Datos"]["SPAWN_RATE_MANZANAS"]:
                 spawn_objects(tablero, MANZANA)
                 elapsed_time_manzana = tiempo_actual
+                refrescar_tablero(tablero)
 
             # La variable STATS["Velocidad"] hace que si no han pasado esa cantidad de ticks,
             # entonces no se avanzará en el tablero.
