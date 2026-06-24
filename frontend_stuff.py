@@ -2,7 +2,7 @@ import math as math
 
 # Inicializamos class de tweens (ya traia ganas de porfin usar classes, me da igual que sea un proyecto de primer semestre I fucking love OOP and metatables)
 class Tween:
-    def __init__(self, inicio : float | int, final : float | int, duracion : int, al_completar : callable | None):
+    def __init__(self, inicio : float | int, final : float | int, duracion : int, al_completar=None):
         self.inicio = inicio
         self.final = final
         self.duracion = duracion # En milisegundos, osea 1 segundo se expresaria como 1000
