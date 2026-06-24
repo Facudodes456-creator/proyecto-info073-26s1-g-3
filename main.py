@@ -109,8 +109,8 @@ STATS = {
     "Vidas_Adicionales" : 0,
     "Vidas_Adicionales_Current" : 0, # Al consumir 4 puntos disponibles en mejorar esta metrica, se obtendra una resurreccion
     "Puntos_disponibles" : 0, # Aqui guardaremos los puntos disponibles, se conseguiran 4 puntos cada piso completado, y 0.5 puntos por cada monstruo derrotado en el piso (No cuentan los monstruos derrotados si no pasas el piso)
-    "Armadura" : 1, # Cada punto de armadura es 1 punto de defensa que protege al jugador de 1 solo hit por cada punto de armadura, o consume 2 puntos para tankear el golpe de un obstaculo y lo destruye, por ejemplo si tienes 2 de armadura y 4 de vida, y tocas a 3 monstruos, tu vida restante sera de 3, 2 golpes habran sido tankeados por la armadura
-    "Armadura_Current" : 1,
+    "Armadura" : 1, # Cada punto de armadura es 1 punto de defensa que protege al jugador de 1 solo hit por cada punto de armadura, o consume 2 puntos para tankear el golpe de un obstaculo y lo destruye, o si te sales del mapa, consumes 2 puntos para evitar esto, y te quedas parado en el ultimo tile pisado, hasta que elijas una nueva direccion, por ejemplo si tienes 2 de armadura y 4 de vida, y tocas a 3 monstruos, tu vida restante sera de 3, 2 golpes habran sido tankeados por la armadura
+    "Armadura_Current" : 4,
     "Pasos_Max" : 100
 }
 
@@ -273,61 +273,44 @@ def poblar_tablero(tablero):
     for i in range(manzanas_max):
         aparecer_aleatorio(tablero, MANZANA)
 
-def spawn_objects(tablero, id_elem):
-    global monstruos_current
-    global piso
-    global pisos_datos
-
-    if id_elem == MANZANA:
-        if manzanas_current < manzanas_max:
-            aparecer_aleatorio(tablero, id_elem)
-    elif id_elem == MONSTRUO:
-        if monstruos_current < pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"]:
-            aparecer_aleatorio(tablero, id_elem)
 
 
 
+def refrescar_tablero(datos : dict):
 
-def refrescar_tablero(screen, tablero, img_jugador):
-    global piso
-    global pisos_datos
-
-    screen.fill("gray30")
+    datos["screen"].fill("gray30")
     
-    wall = pygame.image.load(pisos_datos[piso]["Texturas"]["Pared"]).convert()
-    apple = pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert_alpha()
-    floor = pygame.image.load(pisos_datos[piso]["Texturas"]["Piso"]).convert()
-    monster = pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert()
-
-    alto_elem = screen.get_height() / FILAS
-    ancho_elem = screen.get_width() / COLUMNAS
+    alto_elem = datos["screen"].get_height() / FILAS
+    ancho_elem = datos["screen"].get_width() / COLUMNAS
 
     pos_y = 0
     for i in range(FILAS):
-        pos_x = 0
+        pos_x = 0  # <- Corregido: Alineado correctamente a 8 espacios
         for j in range(COLUMNAS):
+            
+            # Dibujamos suelo siempre para asegurar consistencia
+            datos["screen"].blit(datos["texturas"]["Piso"], [pos_x, pos_y])
 
-            # Dibujamos la base que es el suelo en todos los tiles
-            if tablero[i][j] in (SUELO, JUGADOR, MANZANA, MONSTRUO):
-                screen.blit(floor, [pos_x, pos_y])
-
-            # Aqui dibujamos cada elemento correspondiente encima de el
-            if tablero[i][j] == OBSTACULO:
-                screen.blit(wall, [pos_x, pos_y])
-            elif tablero[i][j] == JUGADOR:
-                screen.blit(img_jugador, [pos_x + 2, pos_y + 2])
-            elif tablero[i][j] == MANZANA:
-                screen.blit(apple, [pos_x, pos_y])
-            elif tablero[i][j] == MONSTRUO:
-                screen.blit(monster, [pos_x, pos_y])
+            # Ahora dibujamos el objeto correspondiente encima
+            if datos["tablero"][i][j] == OBSTACULO:
+                datos["screen"].blit(datos["texturas"]["Pared"], [pos_x, pos_y])
+            elif datos["tablero"][i][j] == JUGADOR:
+                datos["screen"].blit(datos["img_actual"], [pos_x + 2, pos_y + 2])
+            elif datos["tablero"][i][j] == MANZANA:
+                datos["screen"].blit(datos["texturas"]["Manzana"], [pos_x, pos_y])
+            elif datos["tablero"][i][j] == MONSTRUO:
+                datos["screen"].blit(datos["texturas"]["Monstruo"], [pos_x, pos_y])
 
             pos_x += ancho_elem
-        pos_y += alto_elem
-
+        
+        # <- Corregido: Esto debe ejecutarse CADA VEZ que termina una fila (12 espacios)
+        pos_y += alto_elem 
+        
+    # <- Corregido: El flip va al final de todo, fuera de los bucles (4 espacios)
     pygame.display.flip()
 
 
-def cambiar_direccion(keys, direccion_actual):
+def cambiar_direccion(keys, datos):
     """
     Cambia la dirección del jugador.
 
@@ -344,108 +327,109 @@ def cambiar_direccion(keys, direccion_actual):
     if keys[pygame.K_w]:
         # La tupla nos indica que horizontalmente (columnas) no hará nada (0) y
         # que verticalmente (filas) disminuirá el índice en el tablero (-1).
-        return (0, -1)
+        datos["direccion"] =  (0, -1)
 
     # Tecla S
-    if keys[pygame.K_s]:
+    elif keys[pygame.K_s]:
         # En este caso avanzará a través de las filas del tablero.
-        return (0, 1)
+        datos["direccion"] =  (0, 1)
 
     # Tecla A
-    if keys[pygame.K_a]:
+    elif keys[pygame.K_a]:
         # Retrocede por las columnas del tablero.
-        return (-1, 0)
+        datos["direccion"] =  (-1, 0)
 
     # Tecla D
-    if keys[pygame.K_d]:
+    elif keys[pygame.K_d]:
         # Avanza por las columnas del tablero.
-        return (1, 0)
+        datos["direccion"] =  (1, 0)
 
     # Si no se presiona ninguna de las teclas anteriores, la dirección
     # será la misma que la anterior.
-    return direccion_actual
 
 
-def avanzar(tablero, pos_jugador, direccion,manzanas_comidas):
+def avanzar(datos: dict) -> str:
     """
-    Avanza el jugador un paso en la dirección dada.
-
-    Parámetros:
-        - tablero: El tablero con sus posiciones actuales.
-        - pos_jugador: Tupla con la posición actual (índice con
-            estructura (columna, fila)) del jugador en el tablero.
-        - direccion: Tupla con la dirección en la que está avanzando actualmente el jugador.
+    Avanza el jugador un paso en la dirección dada interactuando directamente
+    con el estado centralizado en el diccionario de datos.
 
     Retorna:
-        - (resultado, nueva_pos_jugador): Retorna el resultado que se obtiene
-            al avanzar (derrota, victoria o "ok" (no cambia de pantalla)) y la nueva posición del jugador.
+        - resultado (str): "derrota", "victoria" o "ok"
     """
-
-    # Obtenemos los componentes "x" e "y" de cada tupla recibida
-    # con información de la dirección y posición del jugador.
     global restantes
     global pasos
     global STATS
     global monstruos_current
     global manzanas_current
 
-    dir_col, dir_fila = direccion
-    ind_actual_col, ind_actual_fila = (
-        pos_jugador  # Tupla (columna, fila) que representa los índices en el tablero.
-    )
+    dir_col, dir_fila = datos["direccion"]
+    ind_actual_col, ind_actual_fila = datos["pos_jugador"]
 
-    # Aplicamos la dirección a la posición del jugador.
+    # Aplicamos la dirección a la posición del jugador
     ind_nueva_col = ind_actual_col + dir_col
     ind_nueva_fila = ind_actual_fila + dir_fila
 
-    # Verificamos que no haya choque con el borde del tablero.
+    # Verificamos choque con el borde del tablero
     if not (0 <= ind_nueva_col < COLUMNAS and 0 <= ind_nueva_fila < FILAS):
-        return "derrota", pos_jugador,manzanas_comidas
+        if STATS["Armadura_Current"] >= 2:
+            datos["direccion"] = (0, 0)
+            STATS["Armadura_Current"] = max(0, STATS["Armadura_Current"] - 2)
+            datos["img_actual"] = datos["sprites"]["abajo"]
+            return "ok"
+        else:
+            return "derrota"
 
-    # Obtenemos el elemento que se encuentre en el tablero en la nueva posición del jugador.
-    pos_elem = tablero[ind_nueva_fila][ind_nueva_col]
+    # Obtenemos el elemento en la nueva celda
+    pos_elem = datos["tablero"][ind_nueva_fila][ind_nueva_col]
 
     if pos_elem == OBSTACULO:
         if STATS["Armadura_Current"] >= 2:
             STATS["Armadura_Current"] = max(0, STATS["Armadura_Current"] - 1)
-            return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
-        else:
+            datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
             
-            return "derrota", pos_jugador,manzanas_comidas
+            datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
+            datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
+
+            return "ok"
+        else:
+            return "derrota"
+            
     elif pos_elem == MONSTRUO:
         if STATS["Armadura_Current"] > 0:
             STATS["Armadura_Current"] -= 1
         else:
             STATS["Vida_Actual"] -= 1
 
-        tablero[ind_actual_fila][ind_actual_col] = SUELO
-        tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
+        datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
+        datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
         monstruos_current = max(0, monstruos_current - 1)
+        
         if STATS["Vida_Actual"] <= 0:
-            return "derrota", pos_jugador,manzanas_comidas
+            return "derrota"
 
-    if pos_elem == MANZANA:
-        manzanas_comidas += 1
+    elif pos_elem == MANZANA:
+        datos["manzanas_comidas"] += 1
         manzanas_current = max(0, manzanas_current - 1)
-        # Agregamos 5 pasos a el jugador, procurando de no sobrepasar los 50 pasos maximos.
-        pasos -= 6
+        pasos -= 6  # Recompensa de pasos
 
-        tablero[ind_actual_fila][ind_actual_col] = SUELO
-        tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
+        datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
+        datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
+        datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
 
-        if manzanas_comidas >= pisos_datos[piso]["Datos"]["MANZANAS_OBJETIVO"]:
-            return "victoria", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
+        if datos["manzanas_comidas"] >= pisos_datos[piso]["Datos"]["MANZANAS_OBJETIVO"]:
+            return "victoria"
+        
+        return "ok"
 
-        return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
+    # Movimiento normal (SUELO o celdas vacías tras procesar monstruos sobrevivientes)
+    datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
+    datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
+    datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
+    
+    return "ok"
 
-    # Movimiento normal, si es que no encontramos manzana ni obstáculo.
-    tablero[ind_actual_fila][ind_actual_col] = SUELO
-    tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
 
-    return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas
-
-
-def reiniciar():
+def reiniciar(datos : dict):
     global monstruos_current
     global manzanas_current
 
@@ -461,23 +445,7 @@ def reiniciar():
     # Si se modifica constante FILAS o COLUMNAS al inicio, también
     # se debe modificar este arreglo de tablero con los valores correspondientes.
     # Esto puede ser mejorado usando dos bucles "for" anidados o comprensión de listas.
-    tablero = [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ]
+    datos["tablero"] = [[0] * COLUMNAS for _ in range(FILAS)]
 
     # Usando dos bucles "for" anidados se haría de la siguiente manera:
     # tablero = []
@@ -494,12 +462,10 @@ def reiniciar():
 
     monstruos_current = 0
     manzanas_current = 0
-    poblar_tablero(tablero)
+    poblar_tablero(datos["tablero"])
 
     # Colocamos al jugador en una posición aleatoria.
-    pos_jugador = aparecer_aleatorio(tablero, JUGADOR)
-
-    return tablero, pos_jugador
+    datos["pos_jugador"] = aparecer_aleatorio(datos["tablero"], JUGADOR)
 
 
 def mostrar_pantalla(screen, nombre_archivo):
@@ -538,7 +504,7 @@ def reestablecer_stats():
 
 # Funcion auxiliar [2]
 def reiniciar_estado_juego(datos : dict):
-    datos["tablero"], datos["pos_jugador"] = reiniciar()
+    reiniciar(datos)
     datos["manzanas_comidas"] = 0
     datos["direccion"] = (0, 0)
     datos["img_actual"] = datos["sprites"]["abajo"]
@@ -546,7 +512,7 @@ def reiniciar_estado_juego(datos : dict):
     datos["elapsed_time_monstruo"] = pygame.time.get_ticks()
     datos["elapsed_time_manzana"] = pygame.time.get_ticks()
     pygame.mixer.music.unpause()
-    refrescar_tablero(datos["screen"], datos["tablero"], datos["img_actual"])
+    refrescar_tablero(datos)
 
 # Funcion auxiliar [3]
 def iniciar_estado_juego(datos : dict):
@@ -590,7 +556,18 @@ def avanzar_personaje(datos : dict):
         elif datos["direccion"] == (-1, 0): datos["img_actual"] = datos["sprites"]["izquierda"]
         elif datos["direccion"] == (1, 0): datos["img_actual"] = datos["sprites"]["derecha"]
 
-        refrescar_tablero(datos["screen"], datos["tablero"], datos["img_actual"])
+        refrescar_tablero(datos)
+
+# Funcion auxiliar [6] made by y'all motherfucking ass Sebasutian Araya です　にっが
+def spawn_objects(tablero, id_elem):
+
+    if id_elem == MANZANA:
+        if manzanas_current < manzanas_max:
+            aparecer_aleatorio(tablero, id_elem)
+    elif id_elem == MONSTRUO:
+        if monstruos_current < pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"]:
+            aparecer_aleatorio(tablero, id_elem)
+
 
 def main():
     global restantes
@@ -625,12 +602,19 @@ def main():
             "abajo": img_abajo,
             "izquierda": img_izq,
             "derecha": img_der
+        },
+        # Cargamos las texturas una sola vez y simplemente parseamos por referencia, nada de cargarlas cada vez que llamamos a refrescar_tablero(), pobre CPU que tiene que hacer ciclos de mas al peo
+        "texturas" : {
+            "Manzana" : pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert_alpha(),
+            "Pared" : pygame.image.load(pisos_datos[piso]["Texturas"]["Pared"]).convert(),
+            "Piso" : pygame.image.load(pisos_datos[piso]["Texturas"]["Piso"]).convert(),
+            "Monstruo" : pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert(),
         }
     }
 
     pygame.display.set_caption("Juego Básico")
     running = True
-    
+
     mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
     
     while running:
@@ -670,7 +654,7 @@ def main():
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
 
                 elif datos["estado"] == ESTADO_JUGANDO:              
-                    datos["direccion"] = cambiar_direccion(pygame.key.get_pressed(), datos["direccion"])
+                    cambiar_direccion(pygame.key.get_pressed(), datos)
                 
                 elif datos["estado"] == ESTADO_STATS:
                     if evento.key == pygame.K_r:
@@ -683,21 +667,24 @@ def main():
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
 
         if datos["estado"] == ESTADO_JUGANDO:
+            factor_velocidad = STATS["Velocidad"] / 200.0
+
+            spawnrate_ringos = pisos_datos[piso]["Datos"]["SPAWN_RATE_MANZANAS"] * factor_velocidad
             datos["tiempo_actual"] = pygame.time.get_ticks()
 
             if (datos["tiempo_actual"] - datos["elapsed_time_monstruo"]) >= pisos_datos[piso]["Datos"]["SPAWN_RATE"]:
                 spawn_objects(datos["tablero"], MONSTRUO)
                 datos["elapsed_time_monstruo"] = datos["tiempo_actual"]
-                refrescar_tablero(datos["screen"], datos["tablero"], datos["img_actual"])
+                refrescar_tablero(datos)
 
-            if (datos["tiempo_actual"] - datos["elapsed_time_manzana"]) >= pisos_datos[piso]["Datos"]["SPAWN_RATE_MANZANAS"]:
+            if (datos["tiempo_actual"] - datos["elapsed_time_manzana"]) >= spawnrate_ringos:
                 spawn_objects(datos["tablero"], MANZANA)
                 datos["elapsed_time_manzana"] = datos["tiempo_actual"]
-                refrescar_tablero(datos["screen"], datos["tablero"], datos["img_actual"])
+                refrescar_tablero(datos)
 
             # Movimiento por ticks
             if datos["direccion"] != (0, 0) and datos["tiempo_actual"] - datos["tiempo_ultimo_mov"] >= STATS["Velocidad"]:
-                resultado, datos["pos_jugador"], datos["manzanas_comidas"] = avanzar(datos["tablero"], datos["pos_jugador"], datos["direccion"] , datos["manzanas_comidas"])
+                resultado = avanzar(datos)
 
                 if resultado == "derrota":
                     if STATS["Vidas_Adicionales_Current"] > 0:
