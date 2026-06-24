@@ -131,7 +131,7 @@ pasos = 0
 FILAS = 15
 COLUMNAS = 15
 
-ACHO_VENTANA = 1040
+ANCHO_VENTANA = 800
 ALTO_VENTANA = 800
 
 def aparecer_aleatorio(tablero, id_elem):
@@ -384,7 +384,7 @@ def avanzar(datos: dict) -> str:
 
     if pos_elem == OBSTACULO:
         if STATS["Armadura_Current"] >= 2:
-            STATS["Armadura_Current"] = max(0, STATS["Armadura_Current"] - 1)
+            STATS["Armadura_Current"] = max(0, STATS["Armadura_Current"] - 2)
             datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
             
             datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
@@ -420,7 +420,6 @@ def avanzar(datos: dict) -> str:
         if datos["manzanas_comidas"] >= pisos_datos[piso]["Datos"]["MANZANAS_OBJETIVO"]:
             return "victoria"
         
-        return "ok"
 
     # Movimiento normal (SUELO o celdas vacías tras procesar monstruos sobrevivientes)
     datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
@@ -591,7 +590,7 @@ def main():
     pygame.init()
 
     # Cargamos la pantalla previamente para que la funcion auxiliar pueda cargar los sprites de los jugadores
-    screen = pygame.display.set_mode((800, 800))
+    screen = pygame.display.set_mode((ANCHO_VENTANA, ALTO_VENTANA))
     # Ahora si cargamos los sprites
     img_arriba, img_abajo, img_izq, img_der = cargar_imagenes_jugador()
 
