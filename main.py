@@ -31,7 +31,7 @@ MANZANA = 3
 MANZANAS_OBJETIVO = 5
 
 #Variables misc
-piso = 0
+piso = 1
 monstruos_current = 0
 manzanas_current = 0
 manzanas_max = 2
@@ -530,228 +530,198 @@ def mostrar_pantalla(screen, nombre_archivo):
 
 
 # Hacemos una funcion auxiliar para evitar el "DRY" (Don't repeat yourself) en el while de main()
+# Funcion auxiliar [1]
 def reestablecer_stats():
     STATS["Vida_Actual"] = STATS["Vida"]
     STATS["Armadura_Current"] = STATS["Armadura"]
     STATS["Vidas_Adicionales_Current"] = STATS["Vidas_Adicionales"]
 
-def main():
-    pygame.init()
+# Funcion auxiliar [2]
+def reiniciar_estado_juego(datos : dict):
+    datos["tablero"], datos["pos_jugador"] = reiniciar()
+    datos["manzanas_comidas"] = 0
+    datos["direccion"] = (0, 0)
+    datos["img_actual"] = datos["sprites"]["abajo"]
+    datos["tiempo_ultimo_mov"] = pygame.time.get_ticks()
+    datos["elapsed_time_monstruo"] = pygame.time.get_ticks()
+    datos["elapsed_time_manzana"] = pygame.time.get_ticks()
+    pygame.mixer.music.unpause()
+    refrescar_tablero(datos["screen"], datos["tablero"], datos["img_actual"])
 
-    # Establecemos la resolución de la pantalla.
-    screen = pygame.display.set_mode((800, 800))
+# Funcion auxiliar [3]
+def iniciar_estado_juego(datos : dict):
+    reiniciar_estado_juego(datos) # Holy shit I love recursive stuff so much
+    pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
+    pygame.mixer.music.set_volume(0)
+    pygame.mixer.music.play(-1)
 
-    # Establecemos el título de la ventana.
-    pygame.display.set_caption("Juego Básico")
-
-    running = True
-
-    global restantes
-    global pasos
-    global STATS
-    global piso
-    global monstruos_current
-
-    estado = ESTADO_INICIO
-    tablero = []
-    pos_jugador = (0, 0)
-    direccion = (0, 0)
-    tiempo_ultimo_mov = 0
-    manzanas_comidas = 0
-    mostrar_pantalla(screen, PANTALLA_INICIO)
+# Funcion auxiliar [4]
+def cargar_imagenes_jugador():
     img_arriba = pygame.image.load("data/imagenes/player/up.png").convert_alpha()
     img_abajo = pygame.image.load("data/imagenes/player/down.png").convert_alpha()
     img_izq = pygame.image.load("data/imagenes/player/left.png").convert_alpha()
     img_der = pygame.image.load("data/imagenes/player/right.png").convert_alpha()
 
-    img_arriba = pygame.transform.scale(img_arriba, (53, 53))
-    img_abajo = pygame.transform.scale(img_abajo, (53, 53))
-    img_izq = pygame.transform.scale(img_izq, (53, 53))
-    img_der = pygame.transform.scale(img_der, (53, 53))
+    return (pygame.transform.scale(img_arriba, (53, 53)), 
+            pygame.transform.scale(img_abajo, (53, 53)), 
+            pygame.transform.scale(img_izq, (53, 53)), 
+            pygame.transform.scale(img_der, (53, 53)))
 
-    img_actual = img_abajo
+# Funcion auxiliar [5] 寒いいいいいバカー～
+def avanzar_personaje(datos : dict):
+    global pasos
+    global restantes
 
-    img_actual = img_abajo
-    # Este es el bucle principal del juego, todo lo que sucede en el juego
-    # está aquí.
+    datos["tiempo_ultimo_mov"] = datos["tiempo_actual"]
+    pasos += 1
+    restantes = STATS["Pasos_Max"] - pasos
+    pygame.display.set_caption(f" Juego - Pasos restantes : {restantes}")
+                        
+    if pasos >= STATS["Pasos_Max"]:
+        datos["estado"] = ESTADO_DERROTA
+        restantes = STATS["Pasos_Max"]
+        pasos = 0
+        reestablecer_stats()
+        mostrar_pantalla(datos["screen"], PANTALLA_DERROTA)
+    else:
+                            
+        if datos["direccion"] == (0, -1): datos["img_actual"] = datos["sprites"]["arriba"]
+        elif datos["direccion"] == (0, 1): datos["img_actual"] = datos["sprites"]["abajo"]
+        elif datos["direccion"] == (-1, 0): datos["img_actual"] = datos["sprites"]["izquierda"]
+        elif datos["direccion"] == (1, 0): datos["img_actual"] = datos["sprites"]["derecha"]
+
+        refrescar_tablero(datos["screen"], datos["tablero"], datos["img_actual"])
+
+def main():
+    global restantes
+    global pasos
+    global STATS
+    global piso
+    global monstruos_current
     
-    elapsed_time_monstruo = pygame.time.get_ticks()
-    elapsed_time_manzana = pygame.time.get_ticks()
+    pygame.init()
+
+    # Cargamos la pantalla previamente para que la funcion auxiliar pueda cargar los sprites de los jugadores
+    screen = pygame.display.set_mode((800, 800))
+    # Ahora si cargamos los sprites
+    img_arriba, img_abajo, img_izq, img_der = cargar_imagenes_jugador()
+
+    # En este diccionario estaran todos nuestros datos relevantes
+    datos = {
+        "pos_jugador" : (0, 0),
+        "direccion" : (0, 0),
+        "tiempo_ultimo_mov" : 0,
+        "manzanas_comidas" : 0,
+        "screen" : screen,
+        "tablero" : [],
+        "img_actual" : img_abajo,
+        "elapsed_time_monstruo" : pygame.time.get_ticks(),
+        "elapsed_time_manzana" : pygame.time.get_ticks(),
+        "tiempo_actual" : 0,
+        "estado" : ESTADO_INICIO,
+        # Aqui estaran los sprites, simplemente parseados por referencia
+        "sprites": {
+            "arriba": img_arriba,
+            "abajo": img_abajo,
+            "izquierda": img_izq,
+            "derecha": img_der
+        }
+    }
+
+    pygame.display.set_caption("Juego Básico")
+    running = True
+    
+    mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
+    
     while running:
-        # Se analizan los eventos del bucle actual.
         for evento in pygame.event.get():
-            # Si es que se quiere cerrar la ventana.
             if evento.type == pygame.QUIT:
                 running = False
 
-            # Si es que se presiona alguna tecla.
             if evento.type == pygame.KEYDOWN:
-                if estado == ESTADO_INICIO:
+                if datos["estado"] == ESTADO_INICIO:
                     if evento.key == pygame.K_SPACE:
-                        piso = min(piso + 1, 3)
-                        tablero, pos_jugador = reiniciar()
-                        manzanas_comidas = 0
-                        direccion = (0, 0)
-                        img_actual = img_abajo
-                        # Obtiene tiempo en milisegundos
-                        tiempo_ultimo_mov = pygame.time.get_ticks()
-                        elapsed_time_monstruo = pygame.time.get_ticks()
-                        elapsed_time_manzana = pygame.time.get_ticks()
-                        estado = ESTADO_JUGANDO
-                        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
-                        pygame.mixer.music.set_volume(0)
-                        pygame.mixer.music.play(-1)
-
-
-                        refrescar_tablero(screen, tablero, img_actual)
+                        iniciar_estado_juego(datos)
+                        datos["estado"] = ESTADO_JUGANDO
+                    
                     elif evento.key == pygame.K_i:
-                        estado = ESTADO_INSTRUCCIONES
-                        mostrar_pantalla(screen, PANTALLA_INSTRUCCIONES)
+                        datos["estado"] = ESTADO_INSTRUCCIONES
+                        mostrar_pantalla(datos["screen"], PANTALLA_INSTRUCCIONES)
 
-                elif estado == ESTADO_INSTRUCCIONES:
-                    estado = ESTADO_INICIO
-                    mostrar_pantalla(screen, PANTALLA_INICIO)
-
+                elif datos["estado"] == ESTADO_INSTRUCCIONES:
+                    datos["estado"] = ESTADO_INICIO
+                    mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
                 
-                elif estado == ESTADO_VICTORIA:
-                    direccion = (0, 0)
+                elif datos["estado"] == ESTADO_VICTORIA:
+                    datos["direccion"] = (0, 0)
                     if evento.key == pygame.K_r:
-                        estado = ESTADO_STATS
+                        datos["estado"] = ESTADO_STATS
                         pygame.mixer.music.pause()
                     elif evento.key == pygame.K_ESCAPE:
-                        estado = ESTADO_INICIO
-                        mostrar_pantalla(screen, PANTALLA_INICIO)
+                        datos["estado"] = ESTADO_INICIO
+                        mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
                 
-                elif estado == ESTADO_DERROTA:
+                elif datos["estado"] == ESTADO_DERROTA:
                     if evento.key == pygame.K_r:
-                        tablero, pos_jugador = reiniciar()
-                        manzanas_comidas = 0
-                        direccion = (0, 0)
-                        img_actual = img_abajo
-                        tiempo_ultimo_mov = pygame.time.get_ticks()
-                        elapsed_time_monstruo = pygame.time.get_ticks()
-                        elapsed_time_manzana = pygame.time.get_ticks()
-                        estado = ESTADO_JUGANDO
-                        pygame.mixer.music.unpause()
-                        refrescar_tablero(screen, tablero, img_actual)
-
+                        reiniciar_estado_juego(datos)
+                        datos["estado"] = ESTADO_JUGANDO
                     if evento.key == pygame.K_ESCAPE:
-                        estado = ESTADO_INICIO
-                        mostrar_pantalla(screen, PANTALLA_INICIO)
+                        datos["estado"] = ESTADO_INICIO
+                        mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
 
-                elif estado == ESTADO_JUGANDO:              
-                    direccion = cambiar_direccion(pygame.key.get_pressed(), direccion)
+                elif datos["estado"] == ESTADO_JUGANDO:              
+                    datos["direccion"] = cambiar_direccion(pygame.key.get_pressed(), datos["direccion"])
                 
-                elif estado == ESTADO_STATS:
-                    #Aqui ira la pantalla que se mostrara luego de pasar cada piso, para mejorar stats
-
+                elif datos["estado"] == ESTADO_STATS:
                     if evento.key == pygame.K_r:
                         piso = min(piso + 1, 3)
-                        tablero, pos_jugador = reiniciar()
-                        manzanas_comidas = 0
-                        direccion = (0, 0)
-                        img_actual = img_abajo
-                        tiempo_ultimo_mov = pygame.time.get_ticks()
-                        elapsed_time_monstruo = pygame.time.get_ticks()
-                        elapsed_time_manzana = pygame.time.get_ticks()
-                        estado = ESTADO_JUGANDO
-                        pygame.mixer.music.unpause()
-                        refrescar_tablero(screen, tablero, img_actual)
+                        reiniciar_estado_juego(datos)
+                        datos["estado"] = ESTADO_JUGANDO 
                     elif evento.key == pygame.K_ESCAPE:
                         piso = min(piso + 1, 3)
-                        estado = ESTADO_INICIO
-                        mostrar_pantalla(screen, PANTALLA_INICIO)
+                        datos["estado"] = ESTADO_INICIO
+                        mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
 
-        if estado == ESTADO_JUGANDO:
-            tiempo_actual = pygame.time.get_ticks()  # En milisegundos
-            if (tiempo_actual - elapsed_time_monstruo) >= pisos_datos[piso]["Datos"]["SPAWN_RATE"]:
-                spawn_objects(tablero, MONSTRUO)
-                elapsed_time_monstruo = tiempo_actual
-                refrescar_tablero(screen, tablero, img_actual)
+        if datos["estado"] == ESTADO_JUGANDO:
+            datos["tiempo_actual"] = pygame.time.get_ticks()
 
-            if (tiempo_actual - elapsed_time_manzana) >= pisos_datos[piso]["Datos"]["SPAWN_RATE_MANZANAS"]:
-                spawn_objects(tablero, MANZANA)
-                elapsed_time_manzana = tiempo_actual
-                refrescar_tablero(screen, tablero, img_actual)
+            if (datos["tiempo_actual"] - datos["elapsed_time_monstruo"]) >= pisos_datos[piso]["Datos"]["SPAWN_RATE"]:
+                spawn_objects(datos["tablero"], MONSTRUO)
+                datos["elapsed_time_monstruo"] = datos["tiempo_actual"]
+                refrescar_tablero(datos["screen"], datos["tablero"], datos["img_actual"])
 
-            # La variable STATS["Velocidad"] hace que si no han pasado esa cantidad de ticks,
-            # entonces no se avanzará en el tablero.
-            if direccion != (0, 0) and tiempo_actual - tiempo_ultimo_mov >= STATS["Velocidad"]:
-                resultado, pos_jugador, manzanas_comidas = avanzar(tablero, pos_jugador, direccion, manzanas_comidas)
+            if (datos["tiempo_actual"] - datos["elapsed_time_manzana"]) >= pisos_datos[piso]["Datos"]["SPAWN_RATE_MANZANAS"]:
+                spawn_objects(datos["tablero"], MANZANA)
+                datos["elapsed_time_manzana"] = datos["tiempo_actual"]
+                refrescar_tablero(datos["screen"], datos["tablero"], datos["img_actual"])
+
+            # Movimiento por ticks
+            if datos["direccion"] != (0, 0) and datos["tiempo_actual"] - datos["tiempo_ultimo_mov"] >= STATS["Velocidad"]:
+                resultado, datos["pos_jugador"], datos["manzanas_comidas"] = avanzar(datos["tablero"], datos["pos_jugador"], datos["direccion"] , datos["manzanas_comidas"])
 
                 if resultado == "derrota":
-                    # No matamos al jugador right away, lo que  hacemos es primero validar si tiene vidas adicionales para concederle una vida extra
                     if STATS["Vidas_Adicionales_Current"] > 0:
-                        
-                        # Le quitamos una resurrecion, y procedemos a darle un punto de vida para que aguante un poco, procurando de no exceder la vida maxima actual
                         STATS["Vidas_Adicionales_Current"] = max(0, STATS["Vidas_Adicionales_Current"] - 1)
                         STATS["Vida_Actual"] = min(STATS["Vida_Actual"] + 1, STATS["Vida"])
 
-                        tiempo_ultimo_mov = tiempo_actual
-                        pasos += 1
-                        restantes = STATS["Pasos_Max"] - pasos
-                        pygame.display.set_caption(f" Juego - Pasos restantes : {restantes}")
-                        if pasos >= STATS["Pasos_Max"]:
-                            estado = ESTADO_DERROTA
-                            restantes = STATS["Pasos_Max"]
-                            pasos = 0
-                            reestablecer_stats()
-                            mostrar_pantalla(screen, PANTALLA_DERROTA)
-                        else:
-                            if direccion == (0, -1):
-                                img_actual = img_arriba
-
-                            elif direccion == (0, 1):
-                                img_actual = img_abajo
-
-                            elif direccion == (-1, 0):
-                                img_actual = img_izq
-
-                            elif direccion == (1, 0):
-                                img_actual = img_der
-
-                            refrescar_tablero(screen, tablero, img_actual)
+                        avanzar_personaje(datos)
                     else:
-                        estado = ESTADO_DERROTA
+                        datos["estado"] = ESTADO_DERROTA
                         restantes = STATS["Pasos_Max"]
                         pasos = 0
                         reestablecer_stats()
-                        mostrar_pantalla(screen, PANTALLA_DERROTA)
+                        mostrar_pantalla(datos["screen"], PANTALLA_DERROTA)
+                
                 elif resultado == "victoria":
-                    estado = ESTADO_VICTORIA
+                    datos["estado"] = ESTADO_VICTORIA
                     restantes = STATS["Pasos_Max"]
                     pasos = 0
                     reestablecer_stats()
-                    mostrar_pantalla(screen, PANTALLA_VICTORIA)
+                    mostrar_pantalla(datos["screen"], PANTALLA_VICTORIA)
+                
                 else:
-                    tiempo_ultimo_mov = tiempo_actual
-                    pasos += 1
-                    restantes = STATS["Pasos_Max"] - pasos
-                    pygame . display . set_caption ( f" Juego - Pasos restantes : {restantes}")
-                    if pasos >= STATS["Pasos_Max"]:
-                        estado = ESTADO_DERROTA
-                        restantes = STATS["Pasos_Max"]
-                        pasos = 0
-                        reestablecer_stats()
-                        mostrar_pantalla(screen, PANTALLA_DERROTA)
-                    else:
-                        if direccion == (0, -1):
-                          img_actual = img_arriba
-
-                        elif direccion == (0, 1):
-                          img_actual = img_abajo
-
-                        elif direccion == (-1, 0):
-                         img_actual = img_izq
-
-                        elif direccion == (1, 0):
-                         img_actual = img_der
-
-                        refrescar_tablero(screen, tablero, img_actual)
+                    avanzar_personaje(datos)
                         
-                
-                
-
     pygame.quit()
 
 
