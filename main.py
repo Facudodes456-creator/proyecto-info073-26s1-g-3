@@ -1,8 +1,8 @@
 import os
 import random
-import math
-
 import pygame
+
+import frontend_stuff as TweenHandler
 
 # Estados del juego
 ESTADO_INICIO = "inicio"
@@ -35,6 +35,12 @@ piso = 1
 monstruos_current = 0
 manzanas_current = 0
 manzanas_max = 2
+
+# Gestor de Tweens principal
+gestor_tweens = TweenHandler.Tweens()
+
+# Tweens inicializados
+tween_botones_ui = TweenHandler.Tween(100, 300, 500)
 
 #Diccionario que contiene informacion esencial de cada piso
 pisos_datos = {
@@ -106,7 +112,7 @@ STATS = {
     "Vida" : 3,
     "Vida_Actual" : 3,
     "Velocidad" : 200, # Esta variable hace alucion a el  retraso entre cada movimiento
-    "Vidas_Adicionales" : 0,
+    "Vidas_Adicionales" : 0, 
     "Vidas_Adicionales_Current" : 0, # Al consumir 4 puntos disponibles en mejorar esta metrica, se obtendra una resurreccion
     "Puntos_disponibles" : 0, # Aqui guardaremos los puntos disponibles, se conseguiran 4 puntos cada piso completado, y 0.5 puntos por cada monstruo derrotado en el piso (No cuentan los monstruos derrotados si no pasas el piso)
     "Armadura" : 1, # Cada punto de armadura es 1 punto de defensa que protege al jugador de 1 solo hit por cada punto de armadura, o consume 2 puntos para tankear el golpe de un obstaculo y lo destruye, o si te sales del mapa, consumes 2 puntos para evitar esto, y te quedas parado en el ultimo tile pisado, hasta que elijas una nueva direccion, por ejemplo si tienes 2 de armadura y 4 de vida, y tocas a 3 monstruos, tu vida restante sera de 3, 2 golpes habran sido tankeados por la armadura
