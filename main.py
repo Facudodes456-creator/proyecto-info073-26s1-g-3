@@ -389,6 +389,7 @@ def avanzar(datos: dict) -> str:
             
             datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
             datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
+            datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
 
             return "ok"
         else:
@@ -568,6 +569,17 @@ def spawn_objects(tablero, id_elem):
         if monstruos_current < pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"]:
             aparecer_aleatorio(tablero, id_elem)
 
+# Funcion auxiliar [7] made by your fucking ugly dogshit awesome dipshit ass author going by the motherfuckidy fucking ass name Sebastian Arrrrrrrrrrraya DESU
+def actualizar_texturas_piso(datos: dict):
+    global piso
+    global pisos_datos
+    datos["texturas"] = {
+        "Manzana": pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert_alpha(),
+        "Pared": pygame.image.load(pisos_datos[piso]["Texturas"]["Pared"]).convert(),
+        "Piso": pygame.image.load(pisos_datos[piso]["Texturas"]["Piso"]).convert(),
+        "Monstruo": pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert(),
+    }
+
 
 def main():
     global restantes
@@ -660,10 +672,12 @@ def main():
                     if evento.key == pygame.K_r:
                         piso = min(piso + 1, 3)
                         reiniciar_estado_juego(datos)
-                        datos["estado"] = ESTADO_JUGANDO 
+                        actualizar_texturas_piso(datos)
+                        datos["estado"] = ESTADO_JUGANDO
                     elif evento.key == pygame.K_ESCAPE:
                         piso = min(piso + 1, 3)
                         datos["estado"] = ESTADO_INICIO
+                        actualizar_texturas_piso(datos)
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
 
         if datos["estado"] == ESTADO_JUGANDO:
