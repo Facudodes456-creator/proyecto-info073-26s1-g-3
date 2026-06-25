@@ -8,6 +8,9 @@ import tween_module as TweenHandler
 from Textures import TextureLoader as TextureHandler
 import frontend_functions
 
+import Textures2 as TextureModule
+import tween_module2 as TweenModule
+
 # Estados del juego
 ESTADO_INICIO = "inicio"
 ESTADO_INSTRUCCIONES = "instrucciones"
