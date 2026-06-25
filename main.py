@@ -313,6 +313,7 @@ def refrescar_tablero(datos : dict):
         pos_y += alto_elem 
         
     # <- Corregido: El flip va al final de todo, fuera de los bucles (4 espacios)
+    dibujar_barra(datos["screen"])
     pygame.display.flip()
 
 
@@ -585,6 +586,79 @@ def actualizar_texturas_piso(datos: dict):
         "Monstruo": pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert(),
     }
 
+def dibujar_barra(screen):
+
+    fuente = pygame.font.SysFont("Arial", 22)
+
+    #==================== VIDA ====================
+
+    porcentaje_vida = STATS["Vida_Actual"] / STATS["Vida"]
+
+    x = 20
+    y = 20
+
+    largo_barra = 180
+    alto_barra = 18
+
+    rect_fondo = pygame.Rect(x, y, largo_barra, alto_barra)
+
+    rect_salud = pygame.Rect(
+        x,
+        y,
+        largo_barra * porcentaje_vida,
+        alto_barra
+    )
+
+    pygame.draw.rect(screen, "red", rect_fondo)
+    pygame.draw.rect(screen, "lime", rect_salud)
+    pygame.draw.rect(screen, "white", rect_fondo, 2)
+
+    texto = fuente.render(
+        f"Vida: {STATS['Vida_Actual']} / {STATS['Vida']}",
+        True,
+        "white"
+    )
+
+    screen.blit(texto, (215, 16))
+
+
+    #==================== ARMADURA ====================
+
+    porcentaje_armadura = min(STATS["Armadura_Current"] / STATS_MAXIMUM_VALUES["Armadura"], 1)
+
+    y = 50
+
+    rect_fondo = pygame.Rect(x, y, largo_barra, alto_barra)
+
+    rect_armadura = pygame.Rect(
+        x,
+        y,
+        largo_barra * porcentaje_armadura,
+        alto_barra
+    )
+
+    pygame.draw.rect(screen, "gray25", rect_fondo)
+    pygame.draw.rect(screen, "dodgerblue", rect_armadura)
+    pygame.draw.rect(screen, "white", rect_fondo, 2)
+
+    texto = fuente.render(
+        f"Armadura: {STATS['Armadura_Current']} / {STATS['Armadura']}",
+        True,
+        "white"
+    )
+
+    screen.blit(texto, (215, 46))
+
+
+    #==================== PASOS ====================
+
+    texto = fuente.render(
+        f"Pasos: {restantes}",
+        True,
+        "white"
+    )
+
+    screen.blit(texto, (20, 82))
 
 def main():
     global restantes
