@@ -1,8 +1,12 @@
 import os
 import random
 import pygame
+import gc
+import frontend_functions
 
-import frontend_stuff as TweenHandler
+import tween_module as TweenHandler
+from Textures import TextureLoader as TextureHandler
+import frontend_functions
 
 # Estados del juego
 ESTADO_INICIO = "inicio"
@@ -28,13 +32,27 @@ OBSTACULO = 1
 MONSTRUO = 4
 JUGADOR = 2
 MANZANA = 3
-MANZANAS_OBJETIVO = 5
+
+# Ancho y alto de la pantalla
+
+ANCHO_VENTANA = 800
+ALTO_VENTANA = 800
+
+# Tamano del tablero
+FILAS = 15
+COLUMNAS = 15
+
 
 #Variables misc
 piso = 1
 monstruos_current = 0
 manzanas_current = 0
 manzanas_max = 2
+
+# Inicializamos gestor de texturas
+T_Handler = TextureHandler([800, 800], [ANCHO_VENTANA, ALTO_VENTANA])
+
+
 
 # Gestor de Tweens principal
 gestor_tweens = TweenHandler.Tweens()
@@ -80,7 +98,7 @@ pisos_datos = {
             "OBSTACULOS_MAX" : 4,
             "SPAWN_RATE" : 4000,
             "SPAWN_RATE_MANZANAS" : 6000,
-            "MANZANAS_OBJETIVO" : 8,
+            "MANZANAS_OBJETIVO" : 1,
         },
         "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
@@ -100,7 +118,7 @@ pisos_datos = {
             "OBSTACULOS_MAX" : 10,
             "SPAWN_RATE" : 2000,
             "SPAWN_RATE_MANZANAS" : 8000,
-            "MANZANAS_OBJETIVO" : 11,
+            "MANZANAS_OBJETIVO" : 1,
         },
         "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
@@ -131,14 +149,6 @@ STATS_MAXIMUM_VALUES = {
 restantes = STATS["Pasos_Max"]
 pasos = 0
 
-# Tamaño del tablero
-# Si se cambian estas constantes, se debe modificar la definición
-# del tablero que se encuentra en función reiniciar().
-FILAS = 15
-COLUMNAS = 15
-
-ANCHO_VENTANA = 800
-ALTO_VENTANA = 800
 
 def aparecer_aleatorio(tablero, id_elem):
     
@@ -527,19 +537,7 @@ def iniciar_estado_juego(datos : dict):
     pygame.mixer.music.set_volume(0)
     pygame.mixer.music.play(-1)
 
-# Funcion auxiliar [4]
-def cargar_imagenes_jugador():
-    img_arriba = pygame.image.load("data/imagenes/player/up.png").convert_alpha()
-    img_abajo = pygame.image.load("data/imagenes/player/down.png").convert_alpha()
-    img_izq = pygame.image.load("data/imagenes/player/left.png").convert_alpha()
-    img_der = pygame.image.load("data/imagenes/player/right.png").convert_alpha()
-
-    return (pygame.transform.scale(img_arriba, (53, 53)), 
-            pygame.transform.scale(img_abajo, (53, 53)), 
-            pygame.transform.scale(img_izq, (53, 53)), 
-            pygame.transform.scale(img_der, (53, 53)))
-
-# Funcion auxiliar [5] 寒いいいいいバカー～
+# Funcion auxiliar [4] 寒いいいいいバカー～
 def avanzar_personaje(datos : dict):
     global pasos
     global restantes
@@ -564,7 +562,7 @@ def avanzar_personaje(datos : dict):
 
         refrescar_tablero(datos)
 
-# Funcion auxiliar [6] made by y'all motherfucking ass Sebasutian Araya です　にっが
+# Funcion auxiliar [5] made by y'all motherfucking ass Sebasutian Araya です　にっが
 def spawn_objects(tablero, id_elem):
 
     if id_elem == MANZANA:
@@ -574,16 +572,21 @@ def spawn_objects(tablero, id_elem):
         if monstruos_current < pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"]:
             aparecer_aleatorio(tablero, id_elem)
 
-# Funcion auxiliar [7] made by your fucking ugly dogshit awesome dipshit ass author going by the motherfuckidy fucking ass name Sebastian Arrrrrrrrrrraya DESU
+# Funcion auxiliar [6] made by your fucking ugly dogshit awesome dipshit ass author going by the motherfuckidy fucking ass name Sebastian Arrrrrrrrrrraya DESU
 def actualizar_texturas_piso(datos: dict):
-    global piso
-    global pisos_datos
+    datos["texturas"].clear()
+
+    T_Handler.limpiar_piso()
+
+
     datos["texturas"] = {
-        "Manzana": pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert_alpha(),
-        "Pared": pygame.image.load(pisos_datos[piso]["Texturas"]["Pared"]).convert(),
-        "Piso": pygame.image.load(pisos_datos[piso]["Texturas"]["Piso"]).convert(),
-        "Monstruo": pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert(),
+            "Manzana" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Manzana"]),
+            "Pared" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Pared"]),
+            "Piso" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Piso"]),
+            "Monstruo" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Monstruo"]),
     }
+
+
 
 
 def main():
@@ -597,8 +600,6 @@ def main():
 
     # Cargamos la pantalla previamente para que la funcion auxiliar pueda cargar los sprites de los jugadores
     screen = pygame.display.set_mode((ANCHO_VENTANA, ALTO_VENTANA))
-    # Ahora si cargamos los sprites
-    img_arriba, img_abajo, img_izq, img_der = cargar_imagenes_jugador()
 
     # En este diccionario estaran todos nuestros datos relevantes
     datos = {
@@ -608,24 +609,24 @@ def main():
         "manzanas_comidas" : 0,
         "screen" : screen,
         "tablero" : [],
-        "img_actual" : img_abajo,
+        "img_actual" : T_Handler.obtener("data/imagenes/player/down.png"),
         "elapsed_time_monstruo" : pygame.time.get_ticks(),
         "elapsed_time_manzana" : pygame.time.get_ticks(),
         "tiempo_actual" : 0,
         "estado" : ESTADO_INICIO,
         # Aqui estaran los sprites, simplemente parseados por referencia
         "sprites": {
-            "arriba": img_arriba,
-            "abajo": img_abajo,
-            "izquierda": img_izq,
-            "derecha": img_der
+            "arriba": T_Handler.obtener("data/imagenes/player/up.png"),
+            "abajo": T_Handler.obtener("data/imagenes/player/down.png"),
+            "izquierda": T_Handler.obtener("data/imagenes/player/left.png"),
+            "derecha": T_Handler.obtener("data/imagenes/player/right.png")
         },
         # Cargamos las texturas una sola vez y simplemente parseamos por referencia, nada de cargarlas cada vez que llamamos a refrescar_tablero(), pobre CPU que tiene que hacer ciclos de mas al peo
         "texturas" : {
-            "Manzana" : pygame.image.load(pisos_datos[piso]["Texturas"]["Manzana"]).convert_alpha(),
-            "Pared" : pygame.image.load(pisos_datos[piso]["Texturas"]["Pared"]).convert(),
-            "Piso" : pygame.image.load(pisos_datos[piso]["Texturas"]["Piso"]).convert(),
-            "Monstruo" : pygame.image.load(pisos_datos[piso]["Texturas"]["Monstruo"]).convert(),
+            "Manzana" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Manzana"]),
+            "Pared" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Pared"]),
+            "Piso" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Piso"]),
+            "Monstruo" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Monstruo"]),
         }
     }
 
@@ -633,8 +634,19 @@ def main():
     running = True
 
     mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
+
+    allowed_to_continue = {"allowed" : False}
+    # Efecto de pantalla de muerte
+    tween_gaussian_blur = TweenHandler.Tween(1.0, 0.1, 1000, al_completar=lambda: frontend_functions.funcion_after_death(allowed_to_continue))
     
     while running:
+        
+        if datos["estado"] == ESTADO_DERROTA:
+            tween_gaussian_blur.empezar(pygame.time.get_ticks())
+            gestor_tweens.agregar(tween_gaussian_blur)
+
+            tween_gaussian_blur.reproducir(pygame.time.get_ticks())
+
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 running = False
@@ -663,9 +675,16 @@ def main():
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
                 
                 elif datos["estado"] == ESTADO_DERROTA:
+
+                    if tween_gaussian_blur.running is True:
+                        iota = tween_gaussian_blur.valor
+                        frontend_functions.aplicar_gaussian_blur(pygame.display.get_surface(), iota)
                     if evento.key == pygame.K_r:
-                        reiniciar_estado_juego(datos)
-                        datos["estado"] = ESTADO_JUGANDO
+                        if allowed_to_continue["allowed"] == False:
+                            print("Espera a que termine el efecto chaval")
+                        else:
+                            reiniciar_estado_juego(datos)
+                            datos["estado"] = ESTADO_JUGANDO
                     if evento.key == pygame.K_ESCAPE:
                         datos["estado"] = ESTADO_INICIO
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
@@ -717,6 +736,7 @@ def main():
                         pasos = 0
                         reestablecer_stats()
                         mostrar_pantalla(datos["screen"], PANTALLA_DERROTA)
+                        allowed_to_continue["allowed"] = False
                 
                 elif resultado == "victoria":
                     datos["estado"] = ESTADO_VICTORIA
