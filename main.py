@@ -128,6 +128,25 @@ pisos_datos = {
 
 }
 
+
+# ==================== CAMBIO DE TEXTURAS POR PISO ====================
+# No precargamos todas las texturas al inicio.
+# Cada vez que cambia el piso, limpiamos la caché del loader y cargamos
+# las imágenes del piso actual. Así el nivel 3 usa su propio suelo.png y pared.png.
+
+def aplicar_texturas_piso_actual(datos: dict):
+    global piso
+
+    datos["texturas"].clear()
+    T_Handler.limpiar_piso()
+
+    datos["texturas"] = {
+        "Manzana": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Manzana"]),
+        "Pared": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Pared"]),
+        "Piso": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Piso"]),
+        "Monstruo": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Monstruo"]),
+    }
+
 #Diccionario que contiene la informacion de nuestro personaje
 STATS = {
     "Vida" : 3,
@@ -578,17 +597,9 @@ def spawn_objects(tablero, id_elem):
 
 # Funcion auxiliar [6] made by your fucking ugly dogshit awesome dipshit ass author going by the motherfuckidy fucking ass name Sebastian Arrrrrrrrrrraya DESU
 def actualizar_texturas_piso(datos: dict):
-    datos["texturas"].clear()
-
-    T_Handler.limpiar_piso()
-
-
-    datos["texturas"] = {
-            "Manzana" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Manzana"]),
-            "Pared" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Pared"]),
-            "Piso" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Piso"]),
-            "Monstruo" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Monstruo"]),
-    }
+    # Antes se borraban y se volvían a cargar las texturas aquí.
+    # Eso causaba el retraso y que se viera por un momento el nivel anterior.
+    aplicar_texturas_piso_actual(datos)
 
 def dibujar_barra(screen):
 
@@ -678,6 +689,7 @@ def main():
     # Cargamos la pantalla previamente para que la funcion auxiliar pueda cargar los sprites de los jugadores
     screen = pygame.display.set_mode((ANCHO_VENTANA, ALTO_VENTANA))
 
+
     # En este diccionario estaran todos nuestros datos relevantes
     datos = {
         "pos_jugador" : (0, 0),
@@ -698,14 +710,11 @@ def main():
             "izquierda": T_Handler.obtener("data/imagenes/player/left.png"),
             "derecha": T_Handler.obtener("data/imagenes/player/right.png")
         },
-        # Cargamos las texturas una sola vez y simplemente parseamos por referencia, nada de cargarlas cada vez que llamamos a refrescar_tablero(), pobre CPU que tiene que hacer ciclos de mas al peo
-        "texturas" : {
-            "Manzana" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Manzana"]),
-            "Pared" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Pared"]),
-            "Piso" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Piso"]),
-            "Monstruo" : T_Handler.obtener(pisos_datos[piso]["Texturas"]["Monstruo"]),
-        }
+        # Las texturas se cargan con aplicar_texturas_piso_actual(datos)
+        "texturas" : {}
     }
+
+    aplicar_texturas_piso_actual(datos)
 
     pygame.display.set_caption("Juego Básico")
     running = True
@@ -772,13 +781,24 @@ def main():
                 elif datos["estado"] == ESTADO_STATS:
                     if evento.key == pygame.K_r:
                         piso = min(piso + 1, 3)
-                        reiniciar_estado_juego(datos)
+
+                        # 1) Primero cambiamos las texturas al piso nuevo.
                         actualizar_texturas_piso(datos)
+
+                        # 2) Luego cargamos la música del piso nuevo.
+                        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
+                        pygame.mixer.music.set_volume(0)
+                        pygame.mixer.music.play(-1)
+
+                        # 3) Recién ahora reiniciamos y dibujamos el tablero.
+                        # Así nunca se alcanza a ver el nivel anterior.
+                        reiniciar_estado_juego(datos)
                         datos["estado"] = ESTADO_JUGANDO
+
                     elif evento.key == pygame.K_ESCAPE:
                         piso = min(piso + 1, 3)
-                        datos["estado"] = ESTADO_INICIO
                         actualizar_texturas_piso(datos)
+                        datos["estado"] = ESTADO_INICIO
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
 
         if datos["estado"] == ESTADO_JUGANDO:
