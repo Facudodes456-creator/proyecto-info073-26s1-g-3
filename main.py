@@ -236,7 +236,41 @@ def aparecer_aleatorio(tablero, id_elem):
 
     return columna, fila
 
-def pantalla_stats(): # Funcion donde mostraremos la pantalla de mejorar stats, luego de ganar cada partida
+
+def pantalla_stats(): 
+    # Funcion donde mostraremos la pantalla de mejorar stats, luego de ganar cada partida
+    
+    
+    if evento.key == pygame.K_1:
+        if STATS["Puntos_disponibles"] >= 2:
+            cambiar_stats("Vida", 2)
+        else:
+            pass
+
+    elif evento.key == pygame.K_2:
+        if STATS["Puntos_disponibles"] >= 2:
+            cambiar_stats("Velocidad", 2)
+        else:
+            pass
+
+    elif evento.key == pygame.K_3:
+        if STATS["Puntos_disponibles"] >= 4:
+            cambiar_stats("Vidas_Adicionales", 4)
+        else:
+            pass
+
+    elif evento.key == pygame.K_4:
+        if STATS["Puntos_disponibles"] >= 1:
+            cambiar_stats("Pasos_Max", 1)
+        else:
+            pass
+
+    elif evento.key == pygame.K_5:
+        if STATS["Puntos_disponibles"] >= 2:
+            cambiar_stats("Armadura", 2)
+        else:
+            pass
+
     return "クソクソクソクソクソ"
 
 def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
@@ -287,6 +321,7 @@ def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
     STATS["Puntos_disponibles"] -= puntos_inputeados
     return msj
 
+
 def poblar_tablero(tablero):
     global piso
     global pisos_datos
@@ -310,8 +345,6 @@ def poblar_tablero(tablero):
     
     for i in range(manzanas_max):
         aparecer_aleatorio(tablero, MANZANA)
-
-
 
 
 def refrescar_tablero(datos : dict):
