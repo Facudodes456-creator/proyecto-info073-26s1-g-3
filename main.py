@@ -54,6 +54,7 @@ manzanas_max = 2
 
 # Inicializamos gestor de texturas
 T_Handler = TextureHandler([800, 800], [ANCHO_VENTANA, ALTO_VENTANA])
+T_Handler = TextureModule.New_Texture_Handler([800, 800], [ANCHO_VENTANA, ALTO_VENTANA])
 
 
 
@@ -138,13 +139,13 @@ def aplicar_texturas_piso_actual(datos: dict):
     global piso
 
     datos["texturas"].clear()
-    T_Handler.limpiar_piso()
+    TextureModule.limpiar_piso(T_Handler)
 
     datos["texturas"] = {
-        "Manzana": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Manzana"]),
-        "Pared": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Pared"]),
-        "Piso": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Piso"]),
-        "Monstruo": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Monstruo"]),
+        "Manzana": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Manzana"]),
+        "Pared": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Pared"]),
+        "Piso": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Piso"]),
+        "Monstruo": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Monstruo"]),
     }
 
 #Diccionario que contiene la informacion de nuestro personaje
@@ -698,17 +699,17 @@ def main():
         "manzanas_comidas" : 0,
         "screen" : screen,
         "tablero" : [],
-        "img_actual" : T_Handler.obtener("data/imagenes/player/down.png"),
+        "img_actual" : TextureModule.obtener(T_Handler, "data/imagenes/player/down.png"),
         "elapsed_time_monstruo" : pygame.time.get_ticks(),
         "elapsed_time_manzana" : pygame.time.get_ticks(),
         "tiempo_actual" : 0,
         "estado" : ESTADO_INICIO,
         # Aqui estaran los sprites, simplemente parseados por referencia
         "sprites": {
-            "arriba": T_Handler.obtener("data/imagenes/player/up.png"),
-            "abajo": T_Handler.obtener("data/imagenes/player/down.png"),
-            "izquierda": T_Handler.obtener("data/imagenes/player/left.png"),
-            "derecha": T_Handler.obtener("data/imagenes/player/right.png")
+            "arriba": TextureModule.obtener(T_Handler, "data/imagenes/player/up.png"),
+            "abajo": TextureModule.obtener(T_Handler, "data/imagenes/player/down.png"),
+            "izquierda": TextureModule.obtener(T_Handler, "data/imagenes/player/left.png"),
+            "derecha": TextureModule.obtener(T_Handler, "data/imagenes/player/right.png")
         },
         # Las texturas se cargan con aplicar_texturas_piso_actual(datos)
         "texturas" : {}
@@ -720,19 +721,9 @@ def main():
     running = True
 
     mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
-
-    allowed_to_continue = {"allowed" : False}
-    # Efecto de pantalla de muerte
-    tween_gaussian_blur = TweenHandler.Tween(1.0, 0.1, 1000, al_completar=lambda: frontend_functions.funcion_after_death(allowed_to_continue))
     
     while running:
         
-        if datos["estado"] == ESTADO_DERROTA:
-            tween_gaussian_blur.empezar(pygame.time.get_ticks())
-            gestor_tweens.agregar(tween_gaussian_blur)
-
-            tween_gaussian_blur.reproducir(pygame.time.get_ticks())
-
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 running = False
@@ -761,14 +752,8 @@ def main():
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
                 
                 elif datos["estado"] == ESTADO_DERROTA:
-
-                    if tween_gaussian_blur.running is True:
-                        iota = tween_gaussian_blur.valor
-                        frontend_functions.aplicar_gaussian_blur(pygame.display.get_surface(), iota)
+                    
                     if evento.key == pygame.K_r:
-                        if allowed_to_continue["allowed"] == False:
-                            print("Espera a que termine el efecto chaval")
-                        else:
                             reiniciar_estado_juego(datos)
                             datos["estado"] = ESTADO_JUGANDO
                     if evento.key == pygame.K_ESCAPE:
