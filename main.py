@@ -555,11 +555,18 @@ def reiniciar_estado_juego(datos : dict):
 
 # Funcion auxiliar [3]
 def iniciar_estado_juego(datos : dict):
-    reiniciar_estado_juego(datos) # Holy shit I love recursive stuff so much
-    pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
-    pygame.mixer.music.set_volume(0)
-    pygame.mixer.music.play(-1)
-
+    reiniciar_estado_juego(datos)
+    pygame.mixer.music.stop()
+    try:
+        print("Piso:", piso)
+        print("Musica:", pisos_datos[piso]["Sonidos"]["Musica"])
+        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
+        pygame.mixer.music.set_volume(1.0)
+        pygame.mixer.music.play(-1)
+        print("Musica cargada correctamente")
+    except Exception as e:
+        print("ERROR al cargar la musica:", e)
+ 
 # Funcion auxiliar [4] 寒いいいいいバカー～
 def avanzar_personaje(datos : dict):
     global pasos
@@ -685,6 +692,7 @@ def main():
     global monstruos_current
     
     pygame.init()
+    pygame.mixer.init()
 
     # Cargamos la pantalla previamente para que la funcion auxiliar pueda cargar los sprites de los jugadores
     screen = pygame.display.set_mode((ANCHO_VENTANA, ALTO_VENTANA))
@@ -786,9 +794,16 @@ def main():
                         actualizar_texturas_piso(datos)
 
                         # 2) Luego cargamos la música del piso nuevo.
-                        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
-                        pygame.mixer.music.set_volume(0)
-                        pygame.mixer.music.play(-1)
+                        pygame.mixer.music.stop()
+                        try:
+                            print("Piso:", piso)
+                            print("Musica:", pisos_datos[piso]["Sonidos"]["Musica"])
+                            pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
+                            pygame.mixer.music.set_volume(1.0)
+                            pygame.mixer.music.play(-1)
+                            print("Musica cargada correctamente")
+                        except Exception as e:
+                            print("ERROR al cargar la musica:", e)
 
                         # 3) Recién ahora reiniciamos y dibujamos el tablero.
                         # Así nunca se alcanza a ver el nivel anterior.
