@@ -240,7 +240,7 @@ def aparecer_aleatorio(tablero, id_elem):
 def pantalla_stats(): 
     # Funcion donde mostraremos la pantalla de mejorar stats, luego de ganar cada partida
     
-    
+
     if evento.key == pygame.K_1:
         if STATS["Puntos_disponibles"] >= 2:
             cambiar_stats("Vida", 2)
