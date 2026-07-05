@@ -134,9 +134,9 @@ pisos_datos = {
 
 }
 
-monstruos_ubicaciones = [] #Usaremos len() para obtener la cantidad de monstruos, y en cada index estara la posicion respectiva en este formato [fila, columna] de ese monstruo en la posicion del tablero
-monstruos_cooldowns = []
-monstruos_cooldowns_current = []
+
+lista_monstruos = [] #La lista de monstruos que habra en la partida, la lista se ve asi [{"pos" : (int, int), "cooldown" : int, "current" : int}] donde la posicion es la posicion x, y respectivamente del monstruo en el tablero
+# cooldown es el tiempo de enfriamiento/frecuencia en el que se movera el monstruo, y current es el tiempo elapsado del ultimo movimiento.
 
 # ==================== CAMBIO DE TEXTURAS POR PISO ====================
 # No precargamos todas las texturas al inicio.
@@ -240,16 +240,14 @@ def aparecer_aleatorio(tablero, id_elem):
     # del tablero correspondiente.
     
     if id_elem == MONSTRUO:
-        monstruos_current = min(monstruos_current + 1, pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"])
-        monstruos_ubicaciones.append((fila, columna))
-        monstruos_cooldowns.append(pisos_datos[piso]["Datos"]["MOVIMIENTO_RATE_MONSTRUOS"] + random.randint(-50, 550))
-        monstruos_cooldowns_current.append(0)
+        lista_monstruos.append({"pos" : (fila, columna), "cooldown" : pisos_datos[piso]["Datos"]["MOVIMIENTO_RATE_MONSTRUOS"] + random.randint(-50, 550), "current" : 0})
+        monstruos_current += 1   
         
     elif id_elem == MANZANA:
         manzanas_current = min(manzanas_current + 1, manzanas_max)
     tablero[fila][columna] = id_elem
 
-    return columna, fila
+    return fila, columna
 
 def pantalla_stats(): # Funcion donde mostraremos la pantalla de mejorar stats, luego de ganar cada partida
     return "クソクソクソクソクソ"
@@ -416,7 +414,7 @@ def avanzar(datos: dict) -> str:
     global manzanas_current
 
     dir_col, dir_fila = datos["direccion"]
-    ind_actual_col, ind_actual_fila = datos["pos_jugador"]
+    ind_actual_fila, ind_actual_col = datos["pos_jugador"]
 
     # Aplicamos la dirección a la posición del jugador
     ind_nueva_col = ind_actual_col + dir_col
@@ -438,11 +436,10 @@ def avanzar(datos: dict) -> str:
     if pos_elem == OBSTACULO:
         if STATS["Armadura_Current"] >= 2:
             STATS["Armadura_Current"] = max(0, STATS["Armadura_Current"] - 2)
-            datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
-            
+
             datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
             datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
-            datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
+            datos["pos_jugador"] = (ind_nueva_fila, ind_nueva_col)
 
             return "ok"
         else:
@@ -453,18 +450,12 @@ def avanzar(datos: dict) -> str:
             STATS["Armadura_Current"] -= 1
         else:
             STATS["Vida_Actual"] -= 1
+
+        for m in lista_monstruos:
+            if m["pos"] == (ind_nueva_fila, ind_nueva_col):
+                lista_monstruos.remove(m)
+                break
         
-        try:
-       # Buscas el índice directamente en la lista que estás seguro que la tiene
-          print(monstruos_ubicaciones)
-          index = monstruos_ubicaciones.index((ind_nueva_fila, ind_nueva_col))
-          del monstruos_ubicaciones[index]
-          del monstruos_cooldowns[index]
-          del monstruos_cooldowns_current[index]
-        except ValueError:
-    # Captura el error si el elemento no existía en absoluto
-          print("hola")
-          pass 
 
 
         datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
@@ -481,7 +472,7 @@ def avanzar(datos: dict) -> str:
 
         datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
         datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
-        datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
+        datos["pos_jugador"] = (ind_nueva_fila, ind_nueva_col)
 
         if datos["manzanas_comidas"] >= pisos_datos[piso]["Datos"]["MANZANAS_OBJETIVO"]:
             return "victoria"
@@ -490,7 +481,7 @@ def avanzar(datos: dict) -> str:
     # Movimiento normal (SUELO o celdas vacías tras procesar monstruos sobrevivientes)
     datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
     datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
-    datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
+    datos["pos_jugador"] = (ind_nueva_fila, ind_nueva_col)
     
     return "ok"
 
@@ -531,8 +522,7 @@ def reiniciar(datos : dict):
     monstruos_current = 0
     manzanas_current = 0
 
-    monstruos_ubicaciones.clear()
-    monstruos_cooldowns.clear()
+    lista_monstruos.clear()
     poblar_tablero(datos["tablero"])
 
     # Colocamos al jugador en una posición aleatoria.
@@ -734,10 +724,13 @@ def mover_aleatoriamente_monstruo(monstruo, tablero : list[list[int]], index : i
     columna = monstruo[1]
 
     nueva_ubicacion = evaluacion_mob_movement(monstruo, tablero)
-    tablero[monstruo[0]][monstruo[1]] = SUELO
-    tablero[nueva_ubicacion[0]][nueva_ubicacion[1]] = MONSTRUO
+    
+    if nueva_ubicacion != monstruo:
+        tablero[monstruo[0]][monstruo[1]] = SUELO
+        tablero[nueva_ubicacion[0]][nueva_ubicacion[1]] = MONSTRUO
+        lista_monstruos[index]["pos"] = nueva_ubicacion
 
-    monstruos_ubicaciones[index] = nueva_ubicacion
+
 
 
 def main():
@@ -820,7 +813,7 @@ def main():
                     if evento.key == pygame.K_r:
                             reiniciar_estado_juego(datos)
                             datos["estado"] = ESTADO_JUGANDO
-                            monstruos_cooldowns_current.clear()
+
                     if evento.key == pygame.K_ESCAPE:
                         datos["estado"] = ESTADO_INICIO
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
@@ -868,10 +861,10 @@ def main():
                 refrescar_tablero(datos)
 
             #Movimiento de monstruos
-            for index in range(len(monstruos_ubicaciones)):
-                if datos["tiempo_actual"] - monstruos_cooldowns_current[index] >= pisos_datos[piso]["Datos"]["MOVIMIENTO_RATE_MONSTRUOS"]:
-                    mover_aleatoriamente_monstruo(monstruos_ubicaciones[index], datos["tablero"], index)
-                    monstruos_cooldowns_current[index] = datos["tiempo_actual"]
+            for index in range(len(lista_monstruos)):
+                if datos["tiempo_actual"] - lista_monstruos[index]["current"] >= lista_monstruos[index]["cooldown"]:
+                    mover_aleatoriamente_monstruo(lista_monstruos[index]["pos"], datos["tablero"], index)
+                    lista_monstruos[index]["current"] = datos["tiempo_actual"]
             
             refrescar_tablero(datos)
 
