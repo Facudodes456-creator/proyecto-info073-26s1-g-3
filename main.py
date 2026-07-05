@@ -3,6 +3,8 @@ import random
 import pygame
 import gc
 import frontend_functions
+import math
+import random
 
 import tween_module as TweenHandler
 from Textures import TextureLoader as TextureHandler
@@ -54,6 +56,7 @@ manzanas_max = 2
 
 # Inicializamos gestor de texturas
 T_Handler = TextureHandler([800, 800], [ANCHO_VENTANA, ALTO_VENTANA])
+T_Handler = TextureModule.New_Texture_Handler([800, 800], [ANCHO_VENTANA, ALTO_VENTANA])
 
 
 
@@ -81,6 +84,7 @@ pisos_datos = {
             "OBSTACULOS_MAX" : 2,
             "SPAWN_RATE" : 6000, # Cada 6000 ticks (O 6 segundos) aparecera un nuevo monstruo mientras aun no se haya llegado a la capacidad maxima de monstruos
             "SPAWN_RATE_MANZANAS" : 5000, # Lo mismo, cada 7 segundos aparecera una nueva manzana (Solo pueden haber un maximo de 2 manzanas en el tablero)
+            "MOVIMIENTO_RATE_MONSTRUOS" : 1000, #Tiempo de delay base en el que los monstruos se moveran
             "MANZANAS_OBJETIVO" : 4
         },
         "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
@@ -102,6 +106,7 @@ pisos_datos = {
             "SPAWN_RATE" : 4000,
             "SPAWN_RATE_MANZANAS" : 6000,
             "MANZANAS_OBJETIVO" : 1,
+            "MOVIMIENTO_RATE_MONSTRUOS" : 300,
         },
         "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
@@ -122,12 +127,16 @@ pisos_datos = {
             "SPAWN_RATE" : 2000,
             "SPAWN_RATE_MANZANAS" : 8000,
             "MANZANAS_OBJETIVO" : 1,
+            "MOVIMIENTO_RATE_MONSTRUOS" : 100,
         },
         "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
 
 }
 
+
+lista_monstruos = [] #La lista de monstruos que habra en la partida, la lista se ve asi [{"pos" : (int, int), "cooldown" : int, "current" : int}] donde la posicion es la posicion x, y respectivamente del monstruo en el tablero
+# cooldown es el tiempo de enfriamiento/frecuencia en el que se movera el monstruo, y current es el tiempo elapsado del ultimo movimiento.
 
 # ==================== CAMBIO DE TEXTURAS POR PISO ====================
 # No precargamos todas las texturas al inicio.
@@ -138,13 +147,13 @@ def aplicar_texturas_piso_actual(datos: dict):
     global piso
 
     datos["texturas"].clear()
-    T_Handler.limpiar_piso()
+    TextureModule.limpiar_piso(T_Handler)
 
     datos["texturas"] = {
-        "Manzana": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Manzana"]),
-        "Pared": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Pared"]),
-        "Piso": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Piso"]),
-        "Monstruo": T_Handler.obtener(pisos_datos[piso]["Texturas"]["Monstruo"]),
+        "Manzana": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Manzana"]),
+        "Pared": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Pared"]),
+        "Piso": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Piso"]),
+        "Monstruo": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Monstruo"]),
     }
 
 #Diccionario que contiene la informacion de nuestro personaje
@@ -177,6 +186,8 @@ def aparecer_aleatorio(tablero, id_elem):
     global monstruos_current
     global manzanas_current
     global pisos_datos
+    global monstruos_ubicaciones
+    global monstruos_cooldowns_current
 
     """
     Coloca un elemento en una casilla vacía aleatoria del tablero.
@@ -229,12 +240,14 @@ def aparecer_aleatorio(tablero, id_elem):
     # del tablero correspondiente.
     
     if id_elem == MONSTRUO:
-        monstruos_current = min(monstruos_current + 1, pisos_datos[piso]["Datos"]["MONSTRUOS_MAX"])
+        lista_monstruos.append({"pos" : (fila, columna), "cooldown" : pisos_datos[piso]["Datos"]["MOVIMIENTO_RATE_MONSTRUOS"] + random.randint(-50, 550), "current" : 0})
+        monstruos_current += 1   
+        
     elif id_elem == MANZANA:
         manzanas_current = min(manzanas_current + 1, manzanas_max)
     tablero[fila][columna] = id_elem
 
-    return columna, fila
+    return fila, columna
 
 
 def pantalla_stats(): 
@@ -323,9 +336,7 @@ def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
 
 
 def poblar_tablero(tablero):
-    global piso
     global pisos_datos
-    global monstruos_current
 
 
     """
@@ -428,6 +439,7 @@ def avanzar(datos: dict) -> str:
     Retorna:
         - resultado (str): "derrota", "victoria" o "ok"
     """
+
     global restantes
     global pasos
     global STATS
@@ -435,7 +447,7 @@ def avanzar(datos: dict) -> str:
     global manzanas_current
 
     dir_col, dir_fila = datos["direccion"]
-    ind_actual_col, ind_actual_fila = datos["pos_jugador"]
+    ind_actual_fila, ind_actual_col = datos["pos_jugador"]
 
     # Aplicamos la dirección a la posición del jugador
     ind_nueva_col = ind_actual_col + dir_col
@@ -457,11 +469,10 @@ def avanzar(datos: dict) -> str:
     if pos_elem == OBSTACULO:
         if STATS["Armadura_Current"] >= 2:
             STATS["Armadura_Current"] = max(0, STATS["Armadura_Current"] - 2)
-            datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
-            
+
             datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
             datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
-            datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
+            datos["pos_jugador"] = (ind_nueva_fila, ind_nueva_col)
 
             return "ok"
         else:
@@ -472,6 +483,13 @@ def avanzar(datos: dict) -> str:
             STATS["Armadura_Current"] -= 1
         else:
             STATS["Vida_Actual"] -= 1
+
+        for m in lista_monstruos:
+            if m["pos"] == (ind_nueva_fila, ind_nueva_col):
+                lista_monstruos.remove(m)
+                break
+        
+
 
         datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
         datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
@@ -487,7 +505,7 @@ def avanzar(datos: dict) -> str:
 
         datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
         datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
-        datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
+        datos["pos_jugador"] = (ind_nueva_fila, ind_nueva_col)
 
         if datos["manzanas_comidas"] >= pisos_datos[piso]["Datos"]["MANZANAS_OBJETIVO"]:
             return "victoria"
@@ -496,7 +514,7 @@ def avanzar(datos: dict) -> str:
     # Movimiento normal (SUELO o celdas vacías tras procesar monstruos sobrevivientes)
     datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
     datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
-    datos["pos_jugador"] = (ind_nueva_col, ind_nueva_fila)
+    datos["pos_jugador"] = (ind_nueva_fila, ind_nueva_col)
     
     return "ok"
 
@@ -504,6 +522,8 @@ def avanzar(datos: dict) -> str:
 def reiniciar(datos : dict):
     global monstruos_current
     global manzanas_current
+    global monstruos_ubicaciones
+    global monstruos_cooldowns
 
     """
     Crea un nuevo tablero y estado para una nueva partida.
@@ -534,6 +554,8 @@ def reiniciar(datos : dict):
 
     monstruos_current = 0
     manzanas_current = 0
+
+    lista_monstruos.clear()
     poblar_tablero(datos["tablero"])
 
     # Colocamos al jugador en una posición aleatoria.
@@ -588,11 +610,18 @@ def reiniciar_estado_juego(datos : dict):
 
 # Funcion auxiliar [3]
 def iniciar_estado_juego(datos : dict):
-    reiniciar_estado_juego(datos) # Holy shit I love recursive stuff so much
-    pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
-    pygame.mixer.music.set_volume(0)
-    pygame.mixer.music.play(-1)
-
+    reiniciar_estado_juego(datos)
+    pygame.mixer.music.stop()
+    try:
+        print("Piso:", piso)
+        print("Musica:", pisos_datos[piso]["Sonidos"]["Musica"])
+        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
+        pygame.mixer.music.set_volume(1.0)
+        pygame.mixer.music.play(-1)
+        print("Musica cargada correctamente")
+    except Exception as e:
+        print("ERROR al cargar la musica:", e)
+ 
 # Funcion auxiliar [4] 寒いいいいいバカー～
 def avanzar_personaje(datos : dict):
     global pasos
@@ -710,6 +739,40 @@ def dibujar_barra(screen):
 
 
 
+def evaluacion_mob_movement(monstruo : list[int], tablero : list[list[int]]) -> list[int, int]:
+    tupla = (random.randint(-1, 1), random.randint(-1, 1))
+
+    nueva_ubicacion_x = monstruo[0] + tupla[0]
+    nueva_ubicacion_y = monstruo[1] + tupla[1]
+    
+    # Si se sale del tablero, REINTENTA y ASEGURA retornar ese resultado
+    if not (0 <= nueva_ubicacion_x < COLUMNAS and 0 <= nueva_ubicacion_y < FILAS):
+        return evaluacion_mob_movement(monstruo, tablero) # <-- Agregado el 'return' aquí
+    else:
+        # CORREGIDO: El movimiento es válido SI la casilla es SUELO, JUGADOR o MANZANA
+        # Si NO es ninguna de esas (ej. es una PARED), se queda en su lugar.
+        casilla_destino = tablero[nueva_ubicacion_x][nueva_ubicacion_y]
+        
+        if casilla_destino == SUELO:
+            return (nueva_ubicacion_x, nueva_ubicacion_y)
+        else:
+            return (monstruo[0], monstruo[1]) # Retorna la posición actual como 
+        
+
+def mover_aleatoriamente_monstruo(monstruo, tablero : list[list[int]], index : int):
+    fila = monstruo[0]
+    columna = monstruo[1]
+
+    nueva_ubicacion = evaluacion_mob_movement(monstruo, tablero)
+    
+    if nueva_ubicacion != monstruo:
+        tablero[monstruo[0]][monstruo[1]] = SUELO
+        tablero[nueva_ubicacion[0]][nueva_ubicacion[1]] = MONSTRUO
+        lista_monstruos[index]["pos"] = nueva_ubicacion
+
+
+
+
 def main():
     global restantes
     global pasos
@@ -718,6 +781,7 @@ def main():
     global monstruos_current
     
     pygame.init()
+    pygame.mixer.init()
 
     # Cargamos la pantalla previamente para que la funcion auxiliar pueda cargar los sprites de los jugadores
     screen = pygame.display.set_mode((ANCHO_VENTANA, ALTO_VENTANA))
@@ -731,20 +795,21 @@ def main():
         "manzanas_comidas" : 0,
         "screen" : screen,
         "tablero" : [],
-        "img_actual" : T_Handler.obtener("data/imagenes/player/down.png"),
+        "img_actual" : TextureModule.obtener(T_Handler, "data/imagenes/player/down.png"),
         "elapsed_time_monstruo" : pygame.time.get_ticks(),
         "elapsed_time_manzana" : pygame.time.get_ticks(),
         "tiempo_actual" : 0,
         "estado" : ESTADO_INICIO,
         # Aqui estaran los sprites, simplemente parseados por referencia
         "sprites": {
-            "arriba": T_Handler.obtener("data/imagenes/player/up.png"),
-            "abajo": T_Handler.obtener("data/imagenes/player/down.png"),
-            "izquierda": T_Handler.obtener("data/imagenes/player/left.png"),
-            "derecha": T_Handler.obtener("data/imagenes/player/right.png")
+            "arriba": TextureModule.obtener(T_Handler, "data/imagenes/player/up.png"),
+            "abajo": TextureModule.obtener(T_Handler, "data/imagenes/player/down.png"),
+            "izquierda": TextureModule.obtener(T_Handler, "data/imagenes/player/left.png"),
+            "derecha": TextureModule.obtener(T_Handler, "data/imagenes/player/right.png")
         },
         # Las texturas se cargan con aplicar_texturas_piso_actual(datos)
-        "texturas" : {}
+        "texturas" : {},
+        "elapsed_time_movimiento_monstruos" : []
     }
 
     aplicar_texturas_piso_actual(datos)
@@ -753,19 +818,10 @@ def main():
     running = True
 
     mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
-
-    allowed_to_continue = {"allowed" : False}
-    # Efecto de pantalla de muerte
-    tween_gaussian_blur = TweenHandler.Tween(1.0, 0.1, 1000, al_completar=lambda: frontend_functions.funcion_after_death(allowed_to_continue))
     
+
     while running:
         
-        if datos["estado"] == ESTADO_DERROTA:
-            tween_gaussian_blur.empezar(pygame.time.get_ticks())
-            gestor_tweens.agregar(tween_gaussian_blur)
-
-            tween_gaussian_blur.reproducir(pygame.time.get_ticks())
-
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 running = False
@@ -794,16 +850,11 @@ def main():
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
                 
                 elif datos["estado"] == ESTADO_DERROTA:
-
-                    if tween_gaussian_blur.running is True:
-                        iota = tween_gaussian_blur.valor
-                        frontend_functions.aplicar_gaussian_blur(pygame.display.get_surface(), iota)
+                    
                     if evento.key == pygame.K_r:
-                        if allowed_to_continue["allowed"] == False:
-                            print("Espera a que termine el efecto chaval")
-                        else:
                             reiniciar_estado_juego(datos)
                             datos["estado"] = ESTADO_JUGANDO
+
                     if evento.key == pygame.K_ESCAPE:
                         datos["estado"] = ESTADO_INICIO
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
@@ -819,9 +870,16 @@ def main():
                         actualizar_texturas_piso(datos)
 
                         # 2) Luego cargamos la música del piso nuevo.
-                        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
-                        pygame.mixer.music.set_volume(0)
-                        pygame.mixer.music.play(-1)
+                        pygame.mixer.music.stop()
+                        try:
+                            print("Piso:", piso)
+                            print("Musica:", pisos_datos[piso]["Sonidos"]["Musica"])
+                            pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
+                            pygame.mixer.music.set_volume(1.0)
+                            pygame.mixer.music.play(-1)
+                            print("Musica cargada correctamente")
+                        except Exception as e:
+                            print("ERROR al cargar la musica:", e)
 
                         # 3) Recién ahora reiniciamos y dibujamos el tablero.
                         # Así nunca se alcanza a ver el nivel anterior.
@@ -850,6 +908,15 @@ def main():
                 datos["elapsed_time_manzana"] = datos["tiempo_actual"]
                 refrescar_tablero(datos)
 
+            #Movimiento de monstruos
+            for index in range(len(lista_monstruos)):
+                if datos["tiempo_actual"] - lista_monstruos[index]["current"] >= lista_monstruos[index]["cooldown"]:
+                    mover_aleatoriamente_monstruo(lista_monstruos[index]["pos"], datos["tablero"], index)
+                    lista_monstruos[index]["current"] = datos["tiempo_actual"]
+            
+            refrescar_tablero(datos)
+
+
             # Movimiento por ticks
             if datos["direccion"] != (0, 0) and datos["tiempo_actual"] - datos["tiempo_ultimo_mov"] >= STATS["Velocidad"]:
                 resultado = avanzar(datos)
@@ -866,7 +933,6 @@ def main():
                         pasos = 0
                         reestablecer_stats()
                         mostrar_pantalla(datos["screen"], PANTALLA_DERROTA)
-                        allowed_to_continue["allowed"] = False
                 
                 elif resultado == "victoria":
                     datos["estado"] = ESTADO_VICTORIA
