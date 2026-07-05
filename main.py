@@ -30,6 +30,7 @@ PANTALLA_INICIO = "pantalla_inicio.bmp"
 PANTALLA_INSTRUCCIONES = "pantalla_instrucciones.bmp"
 PANTALLA_VICTORIA = "pantalla_victoria.bmp"
 PANTALLA_DERROTA = "pantalla_derrota.bmp"
+PANTALLA_STATS = "pantalla_stats.png"
 
 # Códigos de cada elemento del tablero
 SUELO = 0
@@ -250,40 +251,9 @@ def aparecer_aleatorio(tablero, id_elem):
     return fila, columna
 
 
-def pantalla_stats(): 
+def pantalla_stats(screen): 
     # Funcion donde mostraremos la pantalla de mejorar stats, luego de ganar cada partida
     
-
-    if evento.key == pygame.K_1:
-        if STATS["Puntos_disponibles"] >= 2:
-            cambiar_stats("Vida", 2)
-        else:
-            pass
-
-    elif evento.key == pygame.K_2:
-        if STATS["Puntos_disponibles"] >= 2:
-            cambiar_stats("Velocidad", 2)
-        else:
-            pass
-
-    elif evento.key == pygame.K_3:
-        if STATS["Puntos_disponibles"] >= 4:
-            cambiar_stats("Vidas_Adicionales", 4)
-        else:
-            pass
-
-    elif evento.key == pygame.K_4:
-        if STATS["Puntos_disponibles"] >= 1:
-            cambiar_stats("Pasos_Max", 1)
-        else:
-            pass
-
-    elif evento.key == pygame.K_5:
-        if STATS["Puntos_disponibles"] >= 2:
-            cambiar_stats("Armadura", 2)
-        else:
-            pass
-
     return "クソクソクソクソクソ"
 
 def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
@@ -848,6 +818,11 @@ def main():
                     elif evento.key == pygame.K_ESCAPE:
                         datos["estado"] = ESTADO_INICIO
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
+
+                    elif evento.key == pygame.K_e:
+                        datos["estado"] = ESTADO_STATS 
+                        mostrar_pantalla(datos["screen"], PANTALLA_STATS)
+    
                 
                 elif datos["estado"] == ESTADO_DERROTA:
                     
@@ -863,6 +838,38 @@ def main():
                     cambiar_direccion(pygame.key.get_pressed(), datos)
                 
                 elif datos["estado"] == ESTADO_STATS:
+                    
+
+                    if evento.key == pygame.K_1:
+                        if STATS["Puntos_disponibles"] >= 2:
+                            cambiar_stats("Vida", 2)
+                        else:
+                            pass
+
+                    elif evento.key == pygame.K_2:
+                        if STATS["Puntos_disponibles"] >= 2:
+                            cambiar_stats("Velocidad", 2)
+                        else:
+                            pass
+
+                    elif evento.key == pygame.K_3:
+                        if STATS["Puntos_disponibles"] >= 4:
+                            cambiar_stats("Vidas_Adicionales", 4)
+                        else:
+                            pass
+
+                    elif evento.key == pygame.K_4:
+                        if STATS["Puntos_disponibles"] >= 1:
+                            cambiar_stats("Pasos_Max", 1)
+                        else:
+                           pass
+
+                    elif evento.key == pygame.K_5:
+                        if STATS["Puntos_disponibles"] >= 2:
+                            cambiar_stats("Armadura", 2)
+                        else:
+                            pass   
+
                     if evento.key == pygame.K_r:
                         piso = min(piso + 1, 3)
 
