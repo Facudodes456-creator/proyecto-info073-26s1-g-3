@@ -72,10 +72,11 @@ pisos_datos = {
             "Armor_Hurt" : "data/sonidos/armor_hit.wav",
             "out_of_bounds" : "data/sonidos/out_of_bounds.wav",
             "level_up" : "data/sonidos/level_up.mp3",
+            "totem" : "data/sonidos/totem.mp3",
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
-            "MONSTRUOS_MAX" : 2,
-            "OBSTACULOS_MAX" : 2,
+            "MONSTRUOS_MAX" : 4,
+            "OBSTACULOS_MAX" : 4,
             "SPAWN_RATE" : 6000, # Cada 6000 ticks (O 6 segundos) aparecera un nuevo monstruo mientras aun no se haya llegado a la capacidad maxima de monstruos
             "SPAWN_RATE_MANZANAS" : 5000, # Lo mismo, cada 7 segundos aparecera una nueva manzana (Solo pueden haber un maximo de 2 manzanas en el tablero)
             "MOVIMIENTO_RATE_MONSTRUOS" : 1000, #Tiempo de delay base en el que los monstruos se moveran
@@ -96,14 +97,15 @@ pisos_datos = {
             "Armor_Hurt" : "data/sonidos/armor_hit.wav",
             "out_of_bounds" : "data/sonidos/out_of_bounds.wav",
             "level_up" : "data/sonidos/level_up.mp3",
+            "totem" : "data/sonidos/totem.mp3",
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
-            "MONSTRUOS_MAX" : 4,
-            "OBSTACULOS_MAX" : 4,
+            "MONSTRUOS_MAX" : 6,
+            "OBSTACULOS_MAX" : 6,
             "SPAWN_RATE" : 4000,
             "SPAWN_RATE_MANZANAS" : 6000,
             "MANZANAS_OBJETIVO" : 6,
-            "MOVIMIENTO_RATE_MONSTRUOS" : 950,
+            "MOVIMIENTO_RATE_MONSTRUOS" : 800,
         },
     },
         3 : {
@@ -120,14 +122,15 @@ pisos_datos = {
             "Armor_Hurt" : "data/sonidos/armor_hit.wav",
             "out_of_bounds" : "data/sonidos/out_of_bounds.wav",
             "level_up" : "data/sonidos/level_up.mp3",
+            "totem" : "data/sonidos/totem.mp3",
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
-            "MONSTRUOS_MAX" : 6,
-            "OBSTACULOS_MAX" : 6,
+            "MONSTRUOS_MAX" : 8,
+            "OBSTACULOS_MAX" : 8,
             "SPAWN_RATE" : 2000,
-            "SPAWN_RATE_MANZANAS" : 8000,
+            "SPAWN_RATE_MANZANAS" : 7000,
             "MANZANAS_OBJETIVO" : 8,
-            "MOVIMIENTO_RATE_MONSTRUOS" : 900,
+            "MOVIMIENTO_RATE_MONSTRUOS" : 600,
         },
     },
 
@@ -181,8 +184,8 @@ STATS = {
     "Vida" : 3,
     "Vida_Actual" : 3,
     "Velocidad" : 250, # Esta variable hace alucion a el  retraso entre cada movimiento
-    "Vidas_Adicionales" : 0, 
-    "Vidas_Adicionales_Current" : 0, # Al consumir 4 puntos disponibles en mejorar esta metrica, se obtendra una resurreccion
+    "Vidas_Adicionales" : 1, 
+    "Vidas_Adicionales_Current" : 1, # Al consumir 4 puntos disponibles en mejorar esta metrica, se obtendra una resurreccion
     "Puntos_disponibles" : 0, # Aqui guardaremos los puntos disponibles, se conseguiran 4 puntos cada piso completado, y 0.5 puntos por cada monstruo derrotado en el piso (No cuentan los monstruos derrotados si no pasas el piso)
     "Armadura" : 1, # Cada punto de armadura es 1 punto de defensa que protege al jugador de 1 solo hit por cada punto de armadura, o consume 2 puntos para tankear el golpe de un obstaculo y lo destruye, o si te sales del mapa, consumes 2 puntos para evitar esto, y te quedas parado en el ultimo tile pisado, hasta que elijas una nueva direccion, por ejemplo si tienes 2 de armadura y 4 de vida, y tocas a 3 monstruos, tu vida restante sera de 3, 2 golpes habran sido tankeados por la armadura
     "Armadura_Current" : 1,
@@ -480,6 +483,16 @@ def avanzar(datos: dict) -> str:
             datos["sfx_out_of_bounds"].play()
 
             return "ok"
+        
+        elif STATS["Vidas_Adicionales_Current"] > 0:
+            datos["direccion"] = (0, 0)
+            datos["img_actual"] = datos["sprites"]["abajo"]
+            datos["sfx_out_of_bounds"].play()
+
+            revivir_personaje(datos)
+
+
+            return "ok"
         else:
             datos["sfx_hurt"].play()
             return "derrota"
@@ -495,6 +508,14 @@ def avanzar(datos: dict) -> str:
             datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
             datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
             datos["pos_jugador"] = (ind_nueva_fila, ind_nueva_col)
+
+            return "ok"
+        
+        elif STATS["Vidas_Adicionales_Current"] > 0:
+            
+            datos["direccion"] = (0, 0)
+            datos["img_actual"] = datos["sprites"]["abajo"]
+            revivir_personaje(datos)
 
             return "ok"
         else:
@@ -646,16 +667,7 @@ def reiniciar_estado_juego(datos : dict):
 # Funcion auxiliar [3]
 def iniciar_estado_juego(datos : dict):
     reiniciar_estado_juego(datos)
-    pygame.mixer.music.stop()
-    try:
-        print("Piso:", piso)
-        print("Musica:", pisos_datos[piso]["Sonidos"]["Musica"])
-        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
-        pygame.mixer.music.set_volume(1.0)
-        pygame.mixer.music.play(-1)
-        print("Musica cargada correctamente")
-    except Exception as e:
-        print("ERROR al cargar la musica:", e)
+    cargar_nueva_musica()
  
 # Funcion auxiliar [4] 寒いいいいいバカー～
 def avanzar_personaje(datos : dict):
@@ -823,6 +835,13 @@ def cargar_nueva_musica():
     except Exception as e:
         print("ERROR al cargar la musica:", e)
 
+def revivir_personaje(datos : dict):
+    datos["sfx_totem"].play()
+
+    STATS["Vidas_Adicionales_Current"] = max(0, STATS["Vidas_Adicionales_Current"] - 1)
+    STATS["Vida_Actual"] = min(STATS["Vida_Actual"] + 1, STATS["Vida"])
+
+
 
 def main():
     global restantes
@@ -868,6 +887,7 @@ def main():
         "sfx_armor_hurt" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["Armor_Hurt"]),
         "sfx_out_of_bounds" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["out_of_bounds"]),
         "sfx_level_up" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["level_up"]),
+        "sfx_totem" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["totem"]),
     }
 
     datos["sfx_caminata"].set_volume(0.35)
@@ -875,6 +895,7 @@ def main():
     datos["sfx_armor_hurt"].set_volume(0.35)
     datos["sfx_out_of_bounds"].set_volume(0.35)
     datos["sfx_level_up"].set_volume(0.35)
+    datos["sfx_totem"].set_volume(0.35)
 
     aplicar_texturas_piso_actual(datos)
 
@@ -893,6 +914,10 @@ def main():
             if evento.type == pygame.KEYDOWN:
                 if datos["estado"] == ESTADO_INICIO:
                     if evento.key == pygame.K_SPACE:
+                        if piso > 1:
+                            actualizar_texturas_piso(datos)
+                            cargar_nueva_musica()
+                        
                         iniciar_estado_juego(datos)
                         datos["estado"] = ESTADO_JUGANDO
                     
@@ -917,6 +942,7 @@ def main():
                         datos["estado"] = ESTADO_JUGANDO
 
                     elif evento.key == pygame.K_ESCAPE:
+                        piso = min(piso + 1, 3)
                         datos["estado"] = ESTADO_INICIO
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
 
@@ -1025,17 +1051,11 @@ def main():
                 resultado = avanzar(datos)
 
                 if resultado == "derrota":
-                    if STATS["Vidas_Adicionales_Current"] > 0:
-                        STATS["Vidas_Adicionales_Current"] = max(0, STATS["Vidas_Adicionales_Current"] - 1)
-                        STATS["Vida_Actual"] = min(STATS["Vida_Actual"] + 1, STATS["Vida"])
-
-                        avanzar_personaje(datos)
-                    else:
-                        datos["estado"] = ESTADO_DERROTA
-                        restantes = STATS["Pasos_Max"]
-                        pasos = 0
-                        reestablecer_stats()
-                        mostrar_pantalla(datos["screen"], PANTALLA_DERROTA)
+                    datos["estado"] = ESTADO_DERROTA
+                    restantes = STATS["Pasos_Max"]
+                    pasos = 0
+                    reestablecer_stats()
+                    mostrar_pantalla(datos["screen"], PANTALLA_DERROTA)
                 
                 elif resultado == "victoria":
                     datos["estado"] = ESTADO_VICTORIA

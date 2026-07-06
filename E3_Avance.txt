@@ -1,0 +1,28 @@
+======== Avances hechos desde el ultimo entregable (E2) =========
+
+
+Sebastian Araya: 
+
+・Implementacion de movimiento de mobs
+・Refactorize el codigo completamente para hacerlo mas legible, escalable y modulable
+・generacion de monstruos, cambio de stats (la logica en si)
+・Conectar los sonidos SFX (referirse a avances de Matias Andrade) con codigo
+・Logica de pisos
+・Implementacion de logica de stats como: Armadura, Vidas adicionales, Puntos de vida, velocidad.
+
+Luciano Gutberlet:
+
+・Decoracion de pisos
+・Barra de vida, barra de armadura, Contador de pasos
+・Implementacion de sprites para el personaje
+・Implementacion de imagenes de los monstruos, que varian segun el piso
+・Implementacion de musica de ambientacion
+
+Julio Contreras: 
+
+・Implementacion de pantalla de subida de stats
+・Conectar la pantalla de subida de stats con la logica del backend
+
+Matias Andrade:
+
+・Implementacion de SFX 
