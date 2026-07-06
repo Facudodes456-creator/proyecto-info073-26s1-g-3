@@ -181,11 +181,11 @@ def aplicar_texturas_piso_actual(datos: dict):
 
 #Diccionario que contiene la informacion de nuestro personaje
 STATS = {
-    "Vida" : 3,
-    "Vida_Actual" : 3,
-    "Velocidad" : 250, # Esta variable hace alucion a el  retraso entre cada movimiento
-    "Vidas_Adicionales" : 1, 
-    "Vidas_Adicionales_Current" : 1, # Al consumir 4 puntos disponibles en mejorar esta metrica, se obtendra una resurreccion
+    "Vida" : 2,
+    "Vida_Actual" : 2,
+    "Velocidad" : 200, # Esta variable hace alucion a el  retraso entre cada movimiento
+    "Vidas_Adicionales" : 0, 
+    "Vidas_Adicionales_Current" : 0, # Al consumir 4 puntos disponibles en mejorar esta metrica, se obtendra una resurreccion
     "Puntos_disponibles" : 0, # Aqui guardaremos los puntos disponibles, se conseguiran 4 puntos cada piso completado, y 0.5 puntos por cada monstruo derrotado en el piso (No cuentan los monstruos derrotados si no pasas el piso)
     "Armadura" : 1, # Cada punto de armadura es 1 punto de defensa que protege al jugador de 1 solo hit por cada punto de armadura, o consume 2 puntos para tankear el golpe de un obstaculo y lo destruye, o si te sales del mapa, consumes 2 puntos para evitar esto, y te quedas parado en el ultimo tile pisado, hasta que elijas una nueva direccion, por ejemplo si tienes 2 de armadura y 4 de vida, y tocas a 3 monstruos, tu vida restante sera de 3, 2 golpes habran sido tankeados por la armadura
     "Armadura_Current" : 1,
@@ -406,10 +406,8 @@ def refrescar_tablero(datos : dict):
 
             pos_x += ancho_elem
         
-        # <- Corregido: Esto debe ejecutarse CADA VEZ que termina una fila (12 espacios)
         pos_y += alto_elem 
         
-    # <- Corregido: El flip va al final de todo, fuera de los bucles (4 espacios)
     dibujar_barra(datos["screen"])
     pygame.display.flip()
 
@@ -839,7 +837,7 @@ def revivir_personaje(datos : dict):
     datos["sfx_totem"].play()
 
     STATS["Vidas_Adicionales_Current"] = max(0, STATS["Vidas_Adicionales_Current"] - 1)
-    STATS["Vida_Actual"] = min(STATS["Vida_Actual"] + 1, STATS["Vida"])
+    STATS["Vida_Actual"] = 1
 
 
 
