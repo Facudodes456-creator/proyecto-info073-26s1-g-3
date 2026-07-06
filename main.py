@@ -2,9 +2,6 @@ import os
 import random
 import pygame
 import gc
-import frontend_functions
-import math
-import random
 
 import tween_module as TweenHandler
 from Textures import TextureLoader as TextureHandler
@@ -59,14 +56,6 @@ manzanas_max = 2
 T_Handler = TextureHandler([800, 800], [ANCHO_VENTANA, ALTO_VENTANA])
 T_Handler = TextureModule.New_Texture_Handler([800, 800], [ANCHO_VENTANA, ALTO_VENTANA])
 
-
-
-# Gestor de Tweens principal
-gestor_tweens = TweenHandler.Tweens()
-
-# Tweens inicializados
-tween_botones_ui = TweenHandler.Tween(100, 300, 500)
-
 #Diccionario que contiene informacion esencial de cada piso
 pisos_datos = {
     1 : {
@@ -78,7 +67,10 @@ pisos_datos = {
         },
         "Sonidos" : { # Ubicacion de los sonidos que se usaran en el piso
             "Musica" : "data/pisos/1/test.mp3",
-            "Hola" : "gamma dan is fucking hell istfg im never clearin that shit"
+            "Caminata" : "data/sonidos/footsteps.wav",
+            "Hurt" : "data/sonidos/hurt.wav",
+            "Armor_Hurt" : "data/sonidos/armor_hit.wav",
+            "out_of_bounds" : "data/sonidos/out_of_bounds.wav",
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 2,
@@ -88,7 +80,6 @@ pisos_datos = {
             "MOVIMIENTO_RATE_MONSTRUOS" : 1000, #Tiempo de delay base en el que los monstruos se moveran
             "MANZANAS_OBJETIVO" : 4
         },
-        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
         2 : {
         "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 2
@@ -99,17 +90,19 @@ pisos_datos = {
         },
         "Sonidos" : {
             "Musica" : "data/pisos/2/test.mp3",
-            "Hola" : "gamma dan is fucking hell istfg im never clearin that shit"
+            "Caminata" : "data/sonidos/footsteps.wav",
+            "Hurt" : "data/sonidos/hurt.wav",
+            "Armor_Hurt" : "data/sonidos/armor_hit.wav",
+            "out_of_bounds" : "data/sonidos/out_of_bounds.wav",
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 4,
             "OBSTACULOS_MAX" : 4,
             "SPAWN_RATE" : 4000,
             "SPAWN_RATE_MANZANAS" : 6000,
-            "MANZANAS_OBJETIVO" : 1,
-            "MOVIMIENTO_RATE_MONSTRUOS" : 300,
+            "MANZANAS_OBJETIVO" : 6,
+            "MOVIMIENTO_RATE_MONSTRUOS" : 950,
         },
-        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
         3 : {
         "Texturas" : { #Aqui estan los paths de cada textura que usemos para los elementos de el piso, en este caso el piso 3
@@ -120,17 +113,19 @@ pisos_datos = {
         },
         "Sonidos" : {
             "Musica" : "data/pisos/3/test.mp3",
-            "Hola" : "gamma dan is fucking hell istfg im never clearin that shit"
+            "Caminata" : "data/sonidos/footsteps.wav",
+            "Hurt" : "data/sonidos/hurt.wav",
+            "Armor_Hurt" : "data/sonidos/armor_hit.wav",
+            "out_of_bounds" : "data/sonidos/out_of_bounds.wav",
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
-            "MONSTRUOS_MAX" : 10,
-            "OBSTACULOS_MAX" : 10,
+            "MONSTRUOS_MAX" : 6,
+            "OBSTACULOS_MAX" : 6,
             "SPAWN_RATE" : 2000,
             "SPAWN_RATE_MANZANAS" : 8000,
-            "MANZANAS_OBJETIVO" : 1,
-            "MOVIMIENTO_RATE_MONSTRUOS" : 100,
+            "MANZANAS_OBJETIVO" : 8,
+            "MOVIMIENTO_RATE_MONSTRUOS" : 900,
         },
-        "Placeholder_Futuro" : {} #Por si tenemos que agregar algo mas
     },
 
 }
@@ -161,18 +156,18 @@ def aplicar_texturas_piso_actual(datos: dict):
 STATS = {
     "Vida" : 3,
     "Vida_Actual" : 3,
-    "Velocidad" : 200, # Esta variable hace alucion a el  retraso entre cada movimiento
+    "Velocidad" : 250, # Esta variable hace alucion a el  retraso entre cada movimiento
     "Vidas_Adicionales" : 0, 
     "Vidas_Adicionales_Current" : 0, # Al consumir 4 puntos disponibles en mejorar esta metrica, se obtendra una resurreccion
     "Puntos_disponibles" : 0, # Aqui guardaremos los puntos disponibles, se conseguiran 4 puntos cada piso completado, y 0.5 puntos por cada monstruo derrotado en el piso (No cuentan los monstruos derrotados si no pasas el piso)
     "Armadura" : 1, # Cada punto de armadura es 1 punto de defensa que protege al jugador de 1 solo hit por cada punto de armadura, o consume 2 puntos para tankear el golpe de un obstaculo y lo destruye, o si te sales del mapa, consumes 2 puntos para evitar esto, y te quedas parado en el ultimo tile pisado, hasta que elijas una nueva direccion, por ejemplo si tienes 2 de armadura y 4 de vida, y tocas a 3 monstruos, tu vida restante sera de 3, 2 golpes habran sido tankeados por la armadura
-    "Armadura_Current" : 4,
+    "Armadura_Current" : 1,
     "Pasos_Max" : 100
 }
 
 STATS_MAXIMUM_VALUES = {
     "Vida" : 8,
-    "Velocidad" : 100,
+    "Velocidad" : 150,
     "Vidas_Adicionales" : 2,
     "Armadura" : 4
 }
@@ -315,7 +310,7 @@ def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
             msj =  f"Exito. Ahora tienes {STATS['Vidas_Adicionales']} vidas adicionales."
     elif id_stat == "Pasos_Max":
 
-        STATS["Pasos_Max"] += (puntos_inputeados * 5)
+        STATS["Pasos_Max"] += (puntos_inputeados * 10)
         msj =  f"Exito. Ahora tus pasos maximos son {STATS['Pasos_Max']} pasos."
     elif id_stat == "Armadura":
         if puntos_inputeados % 2 != 0 and puntos_inputeados > 1:
@@ -454,8 +449,11 @@ def avanzar(datos: dict) -> str:
             datos["direccion"] = (0, 0)
             STATS["Armadura_Current"] = max(0, STATS["Armadura_Current"] - 2)
             datos["img_actual"] = datos["sprites"]["abajo"]
+            datos["sfx_out_of_bounds"].play()
+
             return "ok"
         else:
+            datos["sfx_hurt"].play()
             return "derrota"
 
     # Obtenemos el elemento en la nueva celda
@@ -464,6 +462,7 @@ def avanzar(datos: dict) -> str:
     if pos_elem == OBSTACULO:
         if STATS["Armadura_Current"] >= 2:
             STATS["Armadura_Current"] = max(0, STATS["Armadura_Current"] - 2)
+            datos["sfx_armor_hurt"].play()
 
             datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
             datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
@@ -471,13 +470,16 @@ def avanzar(datos: dict) -> str:
 
             return "ok"
         else:
+            datos["sfx_hurt"].play()
             return "derrota"
             
     elif pos_elem == MONSTRUO:
         if STATS["Armadura_Current"] > 0:
             STATS["Armadura_Current"] -= 1
+            datos["sfx_armor_hurt"].play()
         else:
             STATS["Vida_Actual"] -= 1
+            datos["sfx_hurt"].play()
 
         for m in lista_monstruos:
             if m["pos"] == (ind_nueva_fila, ind_nueva_col):
@@ -489,7 +491,9 @@ def avanzar(datos: dict) -> str:
         datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
         datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
         monstruos_current = max(0, monstruos_current - 1)
-        
+        datos["monstruos_asesinados"] += 1
+
+
         if STATS["Vida_Actual"] <= 0:
             return "derrota"
 
@@ -510,6 +514,8 @@ def avanzar(datos: dict) -> str:
     datos["tablero"][ind_actual_fila][ind_actual_col] = SUELO
     datos["tablero"][ind_nueva_fila][ind_nueva_col] = JUGADOR
     datos["pos_jugador"] = (ind_nueva_fila, ind_nueva_col)
+
+    datos["sfx_caminata"].play()
     
     return "ok"
 
@@ -593,6 +599,8 @@ def reestablecer_stats():
 
 # Funcion auxiliar [2]
 def reiniciar_estado_juego(datos : dict):
+    global STATS
+
     reiniciar(datos)
     datos["manzanas_comidas"] = 0
     datos["direccion"] = (0, 0)
@@ -600,6 +608,10 @@ def reiniciar_estado_juego(datos : dict):
     datos["tiempo_ultimo_mov"] = pygame.time.get_ticks()
     datos["elapsed_time_monstruo"] = pygame.time.get_ticks()
     datos["elapsed_time_manzana"] = pygame.time.get_ticks()
+    datos["monstruos_asesinados"] = 0
+
+    reestablecer_stats()
+
     pygame.mixer.music.unpause()
     refrescar_tablero(datos)
 
@@ -740,18 +752,18 @@ def evaluacion_mob_movement(monstruo : list[int], tablero : list[list[int]]) -> 
     nueva_ubicacion_x = monstruo[0] + tupla[0]
     nueva_ubicacion_y = monstruo[1] + tupla[1]
     
-    # Si se sale del tablero, REINTENTA y ASEGURA retornar ese resultado
+    # Si se sale del tablero, reintentamos de nuevo, con un maximo de 3 iteraciones
     if not (0 <= nueva_ubicacion_x < COLUMNAS and 0 <= nueva_ubicacion_y < FILAS):
         return evaluacion_mob_movement(monstruo, tablero) # <-- Agregado el 'return' aquí
     else:
-        # CORREGIDO: El movimiento es válido SI la casilla es SUELO, JUGADOR o MANZANA
-        # Si NO es ninguna de esas (ej. es una PARED), se queda en su lugar.
+        # Ubicamos la casilla destino 
         casilla_destino = tablero[nueva_ubicacion_x][nueva_ubicacion_y]
-        
+
+        # Evaluamos que esta casilla no este ocupada por ningun objeto que no sea el suelo
         if casilla_destino == SUELO:
             return (nueva_ubicacion_x, nueva_ubicacion_y)
         else:
-            return (monstruo[0], monstruo[1]) # Retorna la posición actual como 
+            return (monstruo[0], monstruo[1]) # Retornamos la misma posicion
         
 
 def mover_aleatoriamente_monstruo(monstruo, tablero : list[list[int]], index : int):
@@ -760,12 +772,28 @@ def mover_aleatoriamente_monstruo(monstruo, tablero : list[list[int]], index : i
 
     nueva_ubicacion = evaluacion_mob_movement(monstruo, tablero)
     
+    # Solo actualizamos su posicion si la posicion nueva es diferente a la posicion actual (sin actualizar)
     if nueva_ubicacion != monstruo:
         tablero[monstruo[0]][monstruo[1]] = SUELO
         tablero[nueva_ubicacion[0]][nueva_ubicacion[1]] = MONSTRUO
         lista_monstruos[index]["pos"] = nueva_ubicacion
 
+def dar_puntos(datos : dict):
+    STATS["Puntos_disponibles"] += (4 + datos["monstruos_asesinados"])
+    datos["monstruos_asesinados"] = 0
 
+def cargar_nueva_musica():
+     # 2) Luego cargamos la música del piso nuevo.
+    pygame.mixer.music.stop()
+    try:
+        print("Piso:", piso)
+        print("Musica:", pisos_datos[piso]["Sonidos"]["Musica"])
+        pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
+        print("Musica cargada correctamente")
+    except Exception as e:
+        print("ERROR al cargar la musica:", e)
 
 
 def main():
@@ -804,8 +832,19 @@ def main():
         },
         # Las texturas se cargan con aplicar_texturas_piso_actual(datos)
         "texturas" : {},
-        "elapsed_time_movimiento_monstruos" : []
+        # Cantidad de monstruos asesinados por partida (no por piso), cambia dinamicamente
+        "monstruos_asesinados" : 0,
+        # SFX
+        "sfx_caminata" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["Caminata"]),
+        "sfx_hurt" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["Hurt"]),
+        "sfx_armor_hurt" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["Armor_Hurt"]),
+        "sfx_out_of_bounds" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["out_of_bounds"]),
     }
+
+    datos["sfx_caminata"].set_volume(0.25)
+    datos["sfx_hurt"].set_volume(0.25)
+    datos["sfx_armor_hurt"].set_volume(0.25)
+    datos["sfx_out_of_bounds"].set_volume(0.25)
 
     aplicar_texturas_piso_actual(datos)
 
@@ -837,9 +876,16 @@ def main():
                 
                 elif datos["estado"] == ESTADO_VICTORIA:
                     datos["direccion"] = (0, 0)
+                    dar_puntos(datos)
                     if evento.key == pygame.K_r:
-                        datos["estado"] = ESTADO_STATS
-                        pygame.mixer.music.pause()
+                        piso = min(piso + 1, 3)
+                        actualizar_texturas_piso(datos)
+
+                        cargar_nueva_musica()
+
+                        reiniciar_estado_juego(datos)
+                        datos["estado"] = ESTADO_JUGANDO
+
                     elif evento.key == pygame.K_ESCAPE:
                         datos["estado"] = ESTADO_INICIO
                         mostrar_pantalla(datos["screen"], PANTALLA_INICIO)
@@ -906,17 +952,7 @@ def main():
                         # 1) Primero cambiamos las texturas al piso nuevo.
                         actualizar_texturas_piso(datos)
 
-                        # 2) Luego cargamos la música del piso nuevo.
-                        pygame.mixer.music.stop()
-                        try:
-                            print("Piso:", piso)
-                            print("Musica:", pisos_datos[piso]["Sonidos"]["Musica"])
-                            pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
-                            pygame.mixer.music.set_volume(1.0)
-                            pygame.mixer.music.play(-1)
-                            print("Musica cargada correctamente")
-                        except Exception as e:
-                            print("ERROR al cargar la musica:", e)
+                        cargar_nueva_musica()
 
                         # 3) Recién ahora reiniciamos y dibujamos el tablero.
                         # Así nunca se alcanza a ver el nivel anterior.
