@@ -71,6 +71,7 @@ pisos_datos = {
             "Hurt" : "data/sonidos/hurt.wav",
             "Armor_Hurt" : "data/sonidos/armor_hit.wav",
             "out_of_bounds" : "data/sonidos/out_of_bounds.wav",
+            "level_up" : "data/sonidos/level_up.mp3",
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 2,
@@ -94,6 +95,7 @@ pisos_datos = {
             "Hurt" : "data/sonidos/hurt.wav",
             "Armor_Hurt" : "data/sonidos/armor_hit.wav",
             "out_of_bounds" : "data/sonidos/out_of_bounds.wav",
+            "level_up" : "data/sonidos/level_up.mp3",
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 4,
@@ -117,6 +119,7 @@ pisos_datos = {
             "Hurt" : "data/sonidos/hurt.wav",
             "Armor_Hurt" : "data/sonidos/armor_hit.wav",
             "out_of_bounds" : "data/sonidos/out_of_bounds.wav",
+            "level_up" : "data/sonidos/level_up.mp3",
         },
         "Datos" : { #Aqui esta la logica del piso correspondiente
             "MONSTRUOS_MAX" : 6,
@@ -276,7 +279,7 @@ def pantalla_stats(screen):
     pygame.display.update()
 
 
-def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
+def cambiar_stats(id_stat : str, puntos_inputeados : int, datos : dict) -> str:
     global STATS
     
     if puntos_inputeados > STATS["Puntos_disponibles"]:
@@ -289,7 +292,7 @@ def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
         elif puntos_inputeados < 1:
             return "Error, no tienes puntos suficientes."
             
-        
+        datos["sfx_level_up"].play()
         STATS["Vida"] = min(STATS["Vida"] + (puntos_inputeados // 2), STATS_MAXIMUM_VALUES["Vida"])
         msj = f"Exito. Tus puntos de vida ahora son {STATS['Vida']}."
     elif id_stat == "Velocidad":
@@ -298,6 +301,7 @@ def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
         elif puntos_inputeados < 1:
            return "Error, no tienes puntos suficientes."
         
+        datos["sfx_level_up"].play()
         STATS["Velocidad"] = max(100, STATS["Velocidad"] - (puntos_inputeados * 10))
         msj =  f"Exito. Tu velocidad se reducio a {STATS['Velocidad']} milisegundos."
     elif id_stat == "Vidas_Adicionales":
@@ -306,10 +310,12 @@ def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
         else:
             puntos_inputeados = 4
 
+            datos["sfx_level_up"].play()
             STATS["Vidas_Adicionales"] = min(STATS["Vidas_Adicionales"] + 1, STATS_MAXIMUM_VALUES["Vidas_Adicionales"])
             msj =  f"Exito. Ahora tienes {STATS['Vidas_Adicionales']} vidas adicionales."
     elif id_stat == "Pasos_Max":
 
+        datos["sfx_level_up"].play()
         STATS["Pasos_Max"] += (puntos_inputeados * 10)
         msj =  f"Exito. Ahora tus pasos maximos son {STATS['Pasos_Max']} pasos."
     elif id_stat == "Armadura":
@@ -318,6 +324,7 @@ def cambiar_stats(id_stat : str, puntos_inputeados : int) -> str:
         elif puntos_inputeados < 1:
             return "Error, no tienes puntos suficientes."
         
+        datos["sfx_level_up"].play()
         STATS["Armadura"] = min(STATS["Armadura"] + (puntos_inputeados // 2), STATS_MAXIMUM_VALUES["Armadura"])
         msj = f"Exito. Ahora tienes {STATS['Armadura']} de armadura adicional."
 
@@ -789,7 +796,7 @@ def cargar_nueva_musica():
         print("Piso:", piso)
         print("Musica:", pisos_datos[piso]["Sonidos"]["Musica"])
         pygame.mixer.music.load(pisos_datos[piso]["Sonidos"]["Musica"])
-        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.set_volume(0.25)
         pygame.mixer.music.play(-1)
         print("Musica cargada correctamente")
     except Exception as e:
@@ -839,12 +846,14 @@ def main():
         "sfx_hurt" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["Hurt"]),
         "sfx_armor_hurt" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["Armor_Hurt"]),
         "sfx_out_of_bounds" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["out_of_bounds"]),
+        "sfx_level_up" : pygame.mixer.Sound(pisos_datos[piso]["Sonidos"]["level_up"]),
     }
 
-    datos["sfx_caminata"].set_volume(0.25)
-    datos["sfx_hurt"].set_volume(0.25)
-    datos["sfx_armor_hurt"].set_volume(0.25)
-    datos["sfx_out_of_bounds"].set_volume(0.25)
+    datos["sfx_caminata"].set_volume(0.35)
+    datos["sfx_hurt"].set_volume(0.35)
+    datos["sfx_armor_hurt"].set_volume(0.35)
+    datos["sfx_out_of_bounds"].set_volume(0.35)
+    datos["sfx_level_up"].set_volume(0.35)
 
     aplicar_texturas_piso_actual(datos)
 
@@ -913,35 +922,35 @@ def main():
 
                     if evento.key == pygame.K_1:
                         if STATS["Puntos_disponibles"] >= 2:
-                            cambiar_stats("Vida", 2)
+                            cambiar_stats("Vida", 2, datos)
                             pantalla_stats(datos["screen"])
                         else:
                             pass
 
                     elif evento.key == pygame.K_2:
                         if STATS["Puntos_disponibles"] >= 2:
-                            cambiar_stats("Velocidad", 2)
+                            cambiar_stats("Velocidad", 2, datos)
                             pantalla_stats(datos["screen"])
                         else:
                             pass
 
                     elif evento.key == pygame.K_3:
                         if STATS["Puntos_disponibles"] >= 4:
-                            cambiar_stats("Vidas_Adicionales", 4)
+                            cambiar_stats("Vidas_Adicionales", 4, datos)
                             pantalla_stats(datos["screen"])
                         else:
                             pass
 
                     elif evento.key == pygame.K_4:
                         if STATS["Puntos_disponibles"] >= 1:
-                            cambiar_stats("Pasos_Max", 1)
+                            cambiar_stats("Pasos_Max", 1, datos)
                             pantalla_stats(datos["screen"])
                         else:
                            pass
 
                     elif evento.key == pygame.K_5:
                         if STATS["Puntos_disponibles"] >= 2:
-                            cambiar_stats("Armadura", 2)
+                            cambiar_stats("Armadura", 2, datos)
                             pantalla_stats(datos["screen"])
                         else:
                             pass   
