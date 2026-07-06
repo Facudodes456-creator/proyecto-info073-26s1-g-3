@@ -141,6 +141,27 @@ lista_monstruos = [] #La lista de monstruos que habra en la partida, la lista se
 # No precargamos todas las texturas al inicio.
 # Cada vez que cambia el piso, limpiamos la caché del loader y cargamos
 # las imágenes del piso actual. Así el nivel 3 usa su propio suelo.png y pared.png.
+#
+# IMPORTANTE:
+# Los monstruos generados por IA suelen venir en un lienzo grande con mucho espacio vacío.
+# Si se escala el lienzo completo, el monstruo queda diminuto o parece invisible.
+# Por eso el monstruo se carga aparte, recortando la parte visible antes de escalarlo.
+
+def cargar_sprite_recortado(ruta, ancho=50, alto=50):
+    imagen = pygame.image.load(ruta).convert_alpha()
+
+    # Recorta la zona que realmente tiene píxeles visibles.
+    rect = imagen.get_bounding_rect()
+    if rect.width > 0 and rect.height > 0:
+        imagen = imagen.subsurface(rect).copy()
+
+    imagen = pygame.transform.smoothscale(imagen, (ancho, alto))
+    return imagen
+
+def blit_centrado(screen, imagen, pos_x, pos_y, ancho_celda, alto_celda):
+    x = pos_x + (ancho_celda - imagen.get_width()) / 2
+    y = pos_y + (alto_celda - imagen.get_height()) / 2
+    screen.blit(imagen, (x, y))
 
 def aplicar_texturas_piso_actual(datos: dict):
     global piso
@@ -152,7 +173,7 @@ def aplicar_texturas_piso_actual(datos: dict):
         "Manzana": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Manzana"]),
         "Pared": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Pared"]),
         "Piso": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Piso"]),
-        "Monstruo": TextureModule.obtener(T_Handler, pisos_datos[piso]["Texturas"]["Monstruo"]),
+        "Monstruo": cargar_sprite_recortado(pisos_datos[piso]["Texturas"]["Monstruo"], 50, 50),
     }
 
 #Diccionario que contiene la informacion de nuestro personaje
@@ -374,11 +395,11 @@ def refrescar_tablero(datos : dict):
             if datos["tablero"][i][j] == OBSTACULO:
                 datos["screen"].blit(datos["texturas"]["Pared"], [pos_x, pos_y])
             elif datos["tablero"][i][j] == JUGADOR:
-                datos["screen"].blit(datos["img_actual"], [pos_x + 2, pos_y + 2])
+                blit_centrado(datos["screen"], datos["img_actual"], pos_x, pos_y, ancho_elem, alto_elem)
             elif datos["tablero"][i][j] == MANZANA:
                 datos["screen"].blit(datos["texturas"]["Manzana"], [pos_x, pos_y])
             elif datos["tablero"][i][j] == MONSTRUO:
-                datos["screen"].blit(datos["texturas"]["Monstruo"], [pos_x, pos_y])
+                blit_centrado(datos["screen"], datos["texturas"]["Monstruo"], pos_x, pos_y, ancho_elem, alto_elem)
 
             pos_x += ancho_elem
         
